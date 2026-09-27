@@ -50,6 +50,8 @@ Mini PC - Node.js API + PostgreSQL
 
 ## Current capabilities
 
+- Use the deployed library at [ani.kaehana.com](https://ani.kaehana.com).
+- Create a private account and sign in with a personal viewing profile.
 - Search AniList by anime title through the backend API.
 - Browse normalized title, artwork, year, episode count, status and genre metadata.
 - Run the responsive Next.js interface and Express API locally.

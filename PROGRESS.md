@@ -32,9 +32,9 @@ The repository contains a responsive frontend, a validated AniList search API, t
 
 ## Still undecided
 
-- [ ] Final frontend subdomain
-- [ ] Final API subdomain
-- [ ] Authentication provider/approach
+- [x] Frontend subdomain: `ani.kaehana.com`
+- [x] API subdomain: `ani-api.kaehana.com`
+- [x] Authentication: self-hosted email/password with hashed credentials and revocable sessions
 - [ ] Whether multiple profiles per account remain in MVP or move slightly later
 - [ ] Whether scheduled sync runs inside the API process initially or as a separate worker
 
@@ -131,8 +131,8 @@ The repository contains a responsive frontend, a validated AniList search API, t
 
 ## Phase 6 - Accounts/profiles
 
-- [ ] Select authentication approach
-- [ ] Implement account identity
+- [x] Select authentication approach
+- [x] Implement account identity
 - [ ] Implement profile CRUD
 - [ ] Enforce profile ownership server-side
 - [ ] Profile-specific progress
@@ -156,32 +156,38 @@ The repository contains a responsive frontend, a validated AniList search API, t
 
 - [x] Add API Dockerfile
 - [x] Add Compose foundation
-- [ ] Inspect mini-PC environment
-- [ ] Clone repo onto mini PC
-- [ ] Choose application path
-- [ ] Configure persistent PostgreSQL
-- [ ] Run first migration
-- [ ] Configure Cloudflare Tunnel
-- [ ] Select/configure API hostname
-- [ ] Restrict production CORS
-- [ ] Import repo into Vercel
-- [ ] Select/configure frontend hostname
-- [ ] Set production environment variables
+- [x] Inspect mini-PC environment
+- [x] Clone repo onto mini PC
+- [x] Choose application path
+- [x] Configure persistent PostgreSQL
+- [x] Run first migration
+- [x] Configure Cloudflare Tunnel
+- [x] Select/configure API hostname
+- [x] Restrict production CORS
+- [x] Import repo into Vercel
+- [x] Select/configure frontend hostname
+- [x] Set production environment variables
 - [ ] Configure backups
-- [ ] Test full browser -> Vercel -> Cloudflare -> mini PC path
+- [x] Test frontend -> Vercel and public API -> Cloudflare -> mini PC paths
 
 ## Current blockers
 
 1. YouTube API credentials have not been created/configured.
-2. Authentication approach is still undecided.
-3. Final frontend/API subdomains are not selected.
-4. The initial migration has been generated but not applied to production PostgreSQL.
+2. Automated PostgreSQL backup storage and retention are not configured yet.
 
 ## Recommended next work
 
 Persist selected AniList search results into PostgreSQL, expose them through `GET /api/v1/anime`, and build an anime details page from the stored catalogue. After that, add official YouTube source mapping and playback.
 
 ## Session log
+
+### 2026-09-27 - Accounts and public deployment
+
+- Added private account registration and login with strong password hashing, HTTP-only sessions and logout invalidation.
+- Added responsive sign-in and registration pages.
+- Deployed the frontend to Vercel at `ani.kaehana.com`.
+- Deployed PostgreSQL and the API on the mini PC at `ani-api.kaehana.com` through Cloudflare Tunnel.
+- Restricted API browser access to the production frontend and verified registration, session recovery and logout through the public route.
 
 ### 2026-09-27 - First working catalogue slice
 
