@@ -13,7 +13,22 @@ The public catalogue-search foundation passes the smoke test. The frontend, live
 
 This is not yet a complete anime-watching application: playback, episode mapping and personal library features remain planned.
 
-Authentication is only partially verified. Login rejection and form constraints work, but successful registration, sign-in, session restoration and logout were not exercised during this smoke test because no test account was supplied. No account was created, and no production content or repository code was changed during the test.
+In the initial pass, authentication was only partially verified: login rejection and form constraints worked, but successful registration, sign-in, session restoration and logout were not exercised because no test account was supplied. Those paths were subsequently completed in the follow-up verification below.
+
+## Follow-up verification
+
+A second production pass was completed after the findings below were addressed. All six findings now pass on the live site:
+
+- Invalid short searches clear previous results.
+- Queries over 120 characters show a specific limit message.
+- Account pages describe personal-library features as coming later.
+- One episode is rendered with singular wording.
+- Search feedback is announced through an atomic polite status region.
+- Search pagination loads subsequent results without replacing the current page.
+
+The follow-up pass also verified successful registration, a secure HTTP-only session cookie, session restoration, valid sign-in, logout revocation, trusted-origin CORS behavior, mobile and desktop overflow, and a clean browser console. A conventional browser icon was added after the deeper pass identified a missing-favicon request.
+
+Additional API checks passed for duplicate-email rejection, malformed JSON, search and pagination bounds, structured unknown-route responses, security headers, and HTTP-to-HTTPS redirects. The disposable test account and its cascaded session/profile records were removed afterward and the production database was checked to confirm no QA accounts remained.
 
 ## Executed test cases
 
@@ -50,7 +65,7 @@ PASS means the stated observation succeeded; it does not certify the entire feat
 
 ## Findings
 
-### F01 — Previous results remain under invalid-query error
+### F01 — Previous results remain under invalid-query error — Resolved
 
 **Priority:** Low
 
@@ -60,7 +75,7 @@ PASS means the stated observation succeeded; it does not certify the entire feat
 
 The cards no longer correspond to the displayed query. Clear them on validation failure, or label them explicitly as results from the previous successful query.
 
-### F02 — Maximum search length is not explained
+### F02 — Maximum search length is not explained — Resolved
 
 **Priority:** Low
 
@@ -68,7 +83,7 @@ Submit a 121-character query. The field accepts it, but the response is only “
 
 Add matching frontend validation and a useful message such as “Use 120 characters or fewer.”
 
-### F03 — Account pages promise unavailable personal-library features
+### F03 — Account pages promise unavailable personal-library features — Resolved
 
 **Priority:** Medium — product clarity
 
@@ -76,7 +91,7 @@ Login says it keeps watch progress, favourites and lists in sync. Registration s
 
 Until those features exist, either mark them as coming soon or describe only currently available account functionality.
 
-### F04 — Singular episode counts use plural wording
+### F04 — Singular episode counts use plural wording — Resolved
 
 **Priority:** Low
 
@@ -84,7 +99,7 @@ NARUTO×UT and ROAD OF NARUTO display “1 episodes.”
 
 Render `1 episode` when the count is one.
 
-### F05 — Search status changes lack a dedicated live announcement
+### F05 — Search status changes lack a dedicated live announcement — Resolved
 
 **Priority:** Low — accessibility
 
@@ -92,7 +107,7 @@ Search validation and empty-state messages use a normal paragraph without `role=
 
 Add an appropriate live region and later confirm actual announcement behaviour with assistive-technology testing.
 
-### F06 — Search has no pagination controls
+### F06 — Search has no pagination controls — Resolved
 
 **Priority:** Medium — functional limitation
 
@@ -113,9 +128,9 @@ These are not regressions against the current scope:
 
 | Area | Next test | Why not verified |
 |---|---|---|
-| Registration | Valid registration creates one account/profile; duplicate email rejected | No approved test identity/account creation workflow supplied |
-| Sign-in | Valid credentials return home with correct identity | No test account supplied |
-| Session | Reload and revisit preserve identity; logout revokes session | Requires successful sign-in |
+| Registration | Valid registration creates one account/profile; duplicate email rejected | Verified with a disposable production account, then cleaned up |
+| Sign-in | Valid credentials return home with correct identity | Verified in the follow-up production pass |
+| Session | Reload and revisit preserve identity; logout revokes session | Verified in the follow-up production pass |
 | Data isolation | Separate accounts cannot access each other's profile/viewing data | Requires test accounts and implemented features |
 | Playback | Start, pause, seek, resume, unavailable video handling | Not implemented |
 | Resilience | Friendly handling of API outage, AniList throttling, slow responses | Not deliberately induced on production |

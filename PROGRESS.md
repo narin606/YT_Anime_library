@@ -182,20 +182,29 @@ A production smoke test was completed on 2026-09-27 against `ani.kaehana.com` an
 
 Open improvements:
 
-- [ ] F01 Clear or explicitly label previous search results after client-side validation failure.
-- [ ] F02 Add frontend maximum search length validation and a specific 120-character message.
-- [ ] F03 Adjust account-page wording so unfinished watch-progress/watchlist features are not presented as already available.
-- [ ] F04 Render singular episode count as `1 episode`.
-- [ ] F05 Add an accessible live region for async search validation, empty and error states.
-- [ ] F06 Preserve AniList pagination metadata and add next/load-more controls.
-- [ ] Complete valid registration/sign-in/session/logout smoke coverage using a dedicated test account.
+- [x] F01 Clear previous search results after client-side validation failure.
+- [x] F02 Add frontend maximum search length validation and a specific 120-character message.
+- [x] F03 Adjust account-page wording so unfinished watch-progress/watchlist features are presented as coming later.
+- [x] F04 Render singular episode count as `1 episode`.
+- [x] F05 Add an accessible live region for async search validation, empty and error states.
+- [x] F06 Preserve AniList pagination metadata and add load-more controls.
+- [x] Complete valid registration/sign-in/session/logout smoke coverage using a disposable test account.
 - [ ] Add broader browser/device, accessibility, resilience and security test coverage later.
 
 ## Recommended next work
 
-First fix the six smoke-test findings above because they are small, well-bounded improvements to the live experience. Then persist selected AniList search results into PostgreSQL, expose them through `GET /api/v1/anime`, and build an anime details page from the stored catalogue. After that, add official YouTube source mapping and playback.
+Persist selected AniList search results into PostgreSQL, expose them through `GET /api/v1/anime`, and build an anime details page from the stored catalogue. After that, add official YouTube source mapping and playback.
 
 ## Session log
+
+### 2026-09-27 - QA fixes and extended production verification
+
+- Resolved all six initial smoke-test findings: stale results, query-length feedback, account wording, singular episode wording, accessible status announcements, and search pagination.
+- Added frontend regression tests for search limits and episode wording.
+- Completed production registration, session restoration, sign-in, logout revocation, responsive-layout, CORS, and browser-console checks with a disposable account, then removed it and confirmed no QA account remained.
+- Added application icons after the browser pass identified a missing favicon request.
+- Added a controlled HTTP 400 response for malformed JSON request bodies and verified API bounds, duplicate registration handling, structured errors, security headers, and HTTPS redirects.
+- Corrected the Vercel project root so GitHub deployments build the Next.js app from `apps/web`.
 
 ### 2026-09-27 - Production smoke test
 
