@@ -1,6 +1,6 @@
 # YT Anime Library
 
-A personal anime library interface for legally available YouTube-hosted anime.
+A personal anime library interface for available YouTube-hosted anime.
 
 The application is anime-first rather than channel-first: anime metadata, genres, artwork, episodes, watch progress and discovery belong to this app, while playback remains inside the official YouTube embedded player.
 
