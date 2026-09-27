@@ -6,9 +6,9 @@ This file is the source of truth for the current project state. Read it before s
 
 ## Current phase
 
-**Phase 0 complete. Phase 1 and Phase 2 started.**
+**The catalogue foundation is running.**
 
-The public repository now exists and contains a runnable frontend/backend scaffold, deployment notes, Prisma data model, Docker Compose configuration, server handoff instructions, and the initial product architecture.
+The repository contains a responsive frontend, a validated AniList search API, the initial PostgreSQL migration, deployment configuration, and the product architecture. Title search now returns live, normalized anime metadata without requiring a YouTube API key.
 
 ## Confirmed decisions
 
@@ -59,14 +59,14 @@ The public repository now exists and contains a runnable frontend/backend scaffo
 - [x] Add global responsive starter styling
 - [x] Add initial home page shell
 - [ ] Add Tailwind CSS if retained
-- [ ] Build anime card component
+- [x] Build anime card component
 - [ ] Build horizontal catalogue row
 - [ ] Build anime details page
 - [ ] Build episode list
 - [ ] Build player page
-- [ ] Add loading/empty/error states
-- [ ] Connect frontend to backend catalogue API
-- [ ] Replace placeholders with real AniList-backed data
+- [x] Add loading/empty/error states
+- [x] Connect frontend to backend search API
+- [x] Replace search placeholders with live AniList-backed data
 
 ## Phase 2 - Backend foundation
 
@@ -78,27 +78,27 @@ The public repository now exists and contains a runnable frontend/backend scaffo
 - [x] Add Dockerfile
 - [x] Add PostgreSQL Docker Compose service
 - [x] Bind API host exposure to localhost in Compose
-- [ ] Add environment validation
-- [ ] Generate Prisma client in a real dev/server environment
-- [ ] Create initial migration
-- [ ] Connect API to PostgreSQL
+- [x] Add environment validation
+- [x] Generate Prisma client in a real development environment
+- [x] Create initial migration
+- [ ] Connect catalogue routes to PostgreSQL
 - [ ] Add structured logging
-- [ ] Add request validation
+- [x] Add request validation
 - [ ] Add rate limiting
-- [ ] Define stable API error envelope
+- [x] Define stable API error envelope
 
 ## Phase 3 - AniList metadata
 
-- [ ] Create AniList GraphQL client
-- [ ] Search by anime title
-- [ ] Import canonical metadata
-- [ ] Store AniList ID
-- [ ] Store English/Romaji/native titles
-- [ ] Store artwork
-- [ ] Store genres
-- [ ] Store synopsis
-- [ ] Store season/year/status
-- [ ] Store episode count when available
+- [x] Create validated AniList GraphQL client
+- [x] Search by anime title
+- [ ] Import canonical metadata into PostgreSQL
+- [x] Normalize AniList ID
+- [x] Normalize English/Romaji/native titles
+- [x] Normalize artwork
+- [x] Normalize genres and studios
+- [x] Normalize synopsis
+- [x] Normalize season/year/status
+- [x] Normalize episode count when available
 - [ ] Add metadata refresh flow
 
 ## Phase 4 - YouTube catalogue
@@ -172,34 +172,25 @@ The public repository now exists and contains a runnable frontend/backend scaffo
 
 ## Current blockers
 
-1. Mini-PC environment has not yet been inspected by an agent with machine access.
-2. YouTube API credentials have not been created/configured.
-3. Authentication approach is still undecided.
-4. Final frontend/API subdomains are not selected.
-5. No real PostgreSQL migration has been executed yet.
+1. YouTube API credentials have not been created/configured.
+2. Authentication approach is still undecided.
+3. Final frontend/API subdomains are not selected.
+4. The initial migration has been generated but not applied to production PostgreSQL.
 
 ## Recommended next work
 
-### Track A - mini PC
-
-Give `SERVER_AGENT_PROMPT.md` to the agent that can access the server. Its first job is environment inspection, not installation.
-
-### Track B - application
-
-Implement AniList search/import first. This gives the frontend real anime metadata before YouTube ingestion is introduced.
-
-Suggested first vertical slice:
-
-```text
-search AniList title
-  -> save anime metadata
-  -> GET /api/v1/anime
-  -> render real anime cards on frontend
-```
-
-After that, add YouTube source mapping.
+Persist selected AniList search results into PostgreSQL, expose them through `GET /api/v1/anime`, and build an anime details page from the stored catalogue. After that, add official YouTube source mapping and playback.
 
 ## Session log
+
+### 2026-09-27 - First working catalogue slice
+
+- Added a validated AniList GraphQL search client and stable API error responses.
+- Connected the frontend to live anime title search with loading, empty and failure states.
+- Reworked the responsive home page around anime discovery and library collections.
+- Added the initial PostgreSQL migration and expanded stored anime metadata with genres, studios and sync time.
+- Removed insecure database password defaults and added startup environment validation.
+- Updated Next.js and pinned compatible Prisma packages; the production dependency audit reports no known vulnerabilities.
 
 ### 2026-09-27 - Initial concept
 

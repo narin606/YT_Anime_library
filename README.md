@@ -48,9 +48,27 @@ Mini PC - Node.js API + PostgreSQL
 - Provide Continue Watching, watchlists, favourites and search.
 - Never download, proxy, restream or store the anime video itself.
 
+## Current capabilities
+
+- Search AniList by anime title through the backend API.
+- Browse normalized title, artwork, year, episode count, status and genre metadata.
+- Run the responsive Next.js interface and Express API locally.
+- Initialize the relational catalogue with the included PostgreSQL migration.
+
+Copy `.env.example` to `.env`, set a database password, then install and verify:
+
+```bash
+npm install
+npm --workspace services/api test
+npm run build:api
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3001 npm run build:web
+```
+
+Run the API and frontend in separate terminals with `npm run dev:api` and `npm run dev:web`.
+
 ## Project state
 
-Read [PROGRESS.md](./PROGRESS.md) before starting work. It is the source of truth for completed work, decisions, blockers and next tasks.
+Read [PROGRESS.md](./PROGRESS.md) for the current product state and remaining capabilities.
 
 See also:
 

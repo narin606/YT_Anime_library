@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: yt_anime_library
       POSTGRES_USER: yt_anime
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your environment}
     volumes:
       - yt_anime_postgres:/var/lib/postgresql/data
     healthcheck:
@@ -21,7 +21,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-      DATABASE_URL: postgresql://yt_anime:${POSTGRES_PASSWORD:-change-me}@postgres:5432/yt_anime_library
+      DATABASE_URL: postgresql://yt_anime:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your environment}@postgres:5432/yt_anime_library
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
       ANILIST_API_URL: https://graphql.anilist.co

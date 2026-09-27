@@ -38,24 +38,27 @@ enum MatchStatus {
 }
 
 model Anime {
-  id            String       @id @default(cuid())
-  anilistId     Int?         @unique
-  titleEnglish  String?
-  titleRomaji   String
-  titleNative   String?
-  synopsis      String?      @db.Text
-  season        String?
-  seasonYear    Int?
-  status        AnimeStatus  @default(UNKNOWN)
-  episodeCount  Int?
-  coverImageUrl String?
+  id             String      @id @default(cuid())
+  anilistId      Int?        @unique
+  titleEnglish   String?
+  titleRomaji    String
+  titleNative    String?
+  synopsis       String?     @db.Text
+  season         String?
+  seasonYear     Int?
+  status         AnimeStatus @default(UNKNOWN)
+  episodeCount   Int?
+  coverImageUrl  String?
   bannerImageUrl String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  genres         String[]
+  studios        String[]
+  metadataSyncedAt DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  aliases       AnimeAlias[]
-  episodes      Episode[]
-  favourites    Favourite[]
+  aliases        AnimeAlias[]
+  episodes       Episode[]
+  favourites     Favourite[]
   watchlistItems WatchlistItem[]
 }
 
