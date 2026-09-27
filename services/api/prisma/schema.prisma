@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AnimeStatus {
+  UNKNOWN
+  RELEASING
+  FINISHED
+  NOT_YET_RELEASED
+  CANCELLED
+  HIATUS
+}
+
+enum VideoProviderType {
+  YOUTUBE
+}
+
+enum AvailabilityStatus {
+  UNKNOWN
+  AVAILABLE
+  UNAVAILABLE
+  PRIVATE
+  DELETED
+  REGION_RESTRICTED
+  EMBED_DISABLED
+}
+
+enum MatchStatus {
+  PENDING
+  AUTO_ACCEPTED
+  APPROVED
+  REJECTED
+}
+
+model Anime {
+  id            String       @id @default(cuid())
+  anilistId     Int?         @unique
+  titleEnglish  String?
+  titleRomaji   String
+  titleNative   String?
+  synopsis      String?      @db.Text
+  season        String?
+  seasonYear    Int?
+  status        AnimeStatus  @default(UNKNOWN)
+  episodeCount  Int?
+  coverImageUrl String?
+  bannerImageUrl String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  aliases       AnimeAlias[]
+  episodes      Episode[]
+  favourites    Favourite[]
+  watchlistItems WatchlistItem[]
+}
+
+model AnimeAlias {
+  id              String @id @default(cuid())
+  animeId         String
+  alias           String
+  normalizedAlias String
+  source          String?
+
+  anime Anime @relation(fields: [animeId], references: [id], onDelete: Cascade)
+
+  @@index([normalizedAlias])
+}
+
+model Episode {
+  id              String   @id @default(cuid())
+  animeId         String
+  seasonNumber    Int      @default(1)
+  episodeNumber   Int
+  title           String?
+  airDate         DateTime?
+  durationSeconds Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  anime         Anime           @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  videoSources  VideoSource[]
+  watchProgress WatchProgress[]
+
+  @@unique([animeId, seasonNumber, episodeNumber])
+  @@index([animeId])
+}
+
+model VideoProvider {
+  id                  String            @id @default(cuid())
+  type                VideoProviderType @default(YOUTUBE)
+  name                String
+  externalChannelId   String?
+  externalChannelName String?
+  enabled             Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  sources VideoSource[]
+
+  @@unique([type, externalChannelId])
+}
+
+model VideoSource {
+  id                 String             @id @default(cuid())
+  episodeId          String?
+  providerId         String
+  externalVideoId    String             @unique
+  titleRaw           String
+  descriptionRaw     String?            @db.Text
+  thumbnailUrl       String?
+  publishedAt        DateTime?
+  embeddable         Boolean?
+  availabilityStatus AvailabilityStatus @default(UNKNOWN)
+  regionInfo         Json?
+  lastCheckedAt      DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  episode  Episode?      @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  provider VideoProvider @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  matches  SourceMatch[]
+
+  @@index([episodeId])
+  @@index([providerId])
+  @@index([availabilityStatus])
+}
+
+model SourceMatch {
+  id                     String      @id @default(cuid())
+  videoSourceId          String
+  candidateAnimeId       String?
+  candidateEpisodeNumber Int?
+  confidence             Float?
+  status                 MatchStatus @default(PENDING)
+  reason                 String?     @db.Text
+  reviewedAt             DateTime?
+  reviewedBy             String?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  videoSource VideoSource @relation(fields: [videoSourceId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model Account {
+  id                 String   @id @default(cuid())
+  authProviderUserId String   @unique
+  email              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  profiles Profile[]
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  accountId String
+  name      String
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  account       Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  watchProgress WatchProgress[]
+  watchlist     WatchlistItem[]
+  favourites    Favourite[]
+
+  @@index([accountId])
+}
+
+model WatchProgress {
+  id              String   @id @default(cuid())
+  profileId       String
+  episodeId       String
+  positionSeconds Int      @default(0)
+  durationSeconds Int?
+  completed       Boolean  @default(false)
+  lastWatchedAt   DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, episodeId])
+  @@index([profileId, lastWatchedAt])
+}
+
+model WatchlistItem {
+  profileId String
+  animeId   String
+  createdAt DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  anime   Anime   @relation(fields: [animeId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, animeId])
+}
+
+model Favourite {
+  profileId String
+  animeId   String
+  createdAt DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  anime   Anime   @relation(fields: [animeId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, animeId])
+}
