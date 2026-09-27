@@ -81,10 +81,10 @@ The repository contains a responsive frontend, a validated AniList search API, t
 - [x] Add environment validation
 - [x] Generate Prisma client in a real development environment
 - [x] Create initial migration
-- [ ] Connect catalogue routes to PostgreSQL
+- [x] Connect catalogue routes to PostgreSQL
 - [ ] Add structured logging
 - [x] Add request validation
-- [ ] Add rate limiting
+- [x] Add authentication rate limiting
 - [x] Define stable API error envelope
 
 ## Phase 3 - AniList metadata
@@ -174,12 +174,37 @@ The repository contains a responsive frontend, a validated AniList search API, t
 
 1. YouTube API credentials have not been created/configured.
 2. Automated PostgreSQL backup storage and retention are not configured yet.
+3. Stored catalogue is still empty; live AniList search currently works separately from persisted catalogue data.
+
+## QA findings from production smoke test
+
+A production smoke test was completed on 2026-09-27 against `ani.kaehana.com` and `ani-api.kaehana.com`. The public catalogue-search foundation passed with no blocking failures. See `docs/SMOKE_TEST_2026-09-27.md`.
+
+Open improvements:
+
+- [ ] F01 Clear or explicitly label previous search results after client-side validation failure.
+- [ ] F02 Add frontend maximum search length validation and a specific 120-character message.
+- [ ] F03 Adjust account-page wording so unfinished watch-progress/watchlist features are not presented as already available.
+- [ ] F04 Render singular episode count as `1 episode`.
+- [ ] F05 Add an accessible live region for async search validation, empty and error states.
+- [ ] F06 Preserve AniList pagination metadata and add next/load-more controls.
+- [ ] Complete valid registration/sign-in/session/logout smoke coverage using a dedicated test account.
+- [ ] Add broader browser/device, accessibility, resilience and security test coverage later.
 
 ## Recommended next work
 
-Persist selected AniList search results into PostgreSQL, expose them through `GET /api/v1/anime`, and build an anime details page from the stored catalogue. After that, add official YouTube source mapping and playback.
+First fix the six smoke-test findings above because they are small, well-bounded improvements to the live experience. Then persist selected AniList search results into PostgreSQL, expose them through `GET /api/v1/anime`, and build an anime details page from the stored catalogue. After that, add official YouTube source mapping and playback.
 
 ## Session log
+
+### 2026-09-27 - Production smoke test
+
+- Smoke-tested the deployed frontend, search flow, authentication rejection paths, responsive layouts, health endpoint and public API behaviour.
+- Confirmed the frontend, API and PostgreSQL health path were reachable in production.
+- Added `docs/SMOKE_TEST_2026-09-27.md` with 26 executed test cases, six improvement findings and remaining coverage.
+- Corrected stale progress items: the catalogue route already queries PostgreSQL and authentication endpoints already have rate limiting.
+- Added F01-F06 to the active improvement checklist.
+
 
 ### 2026-09-27 - Accounts and public deployment
 
