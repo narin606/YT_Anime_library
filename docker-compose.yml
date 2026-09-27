@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: yt_anime_library
+      POSTGRES_USER: yt_anime
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - yt_anime_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yt_anime -d yt_anime_library"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./services/api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://yt_anime:${POSTGRES_PASSWORD:-change-me}@postgres:5432/yt_anime_library
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      ANILIST_API_URL: https://graphql.anilist.co
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3001:3001"
+
+volumes:
+  yt_anime_postgres:
