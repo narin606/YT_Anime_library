@@ -10,6 +10,7 @@ import { ZodError, z } from "zod";
 
 import { AniListError, searchAnime } from "./anilist.js";
 import { loadConfig } from "./config.js";
+import { isMalformedJsonError } from "./requestErrors.js";
 
 const config = loadConfig();
 const prisma = new PrismaClient();
@@ -129,6 +130,10 @@ app.get("/api/v1/search", async (req, res, next) => {
 
 app.use((_req, res) => res.status(404).json({ error: { code: "not_found", message: "Route not found." } }));
 app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (isMalformedJsonError(error)) {
+    res.status(400).json({ error: { code: "invalid_json", message: "Request body must contain valid JSON." } });
+    return;
+  }
   if (error instanceof ZodError) {
     res.status(400).json({ error: { code: "invalid_request", message: "Check the request and try again.", details: error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })) } });
     return;
