@@ -27,7 +27,7 @@ export default function LoginPage() {
     <Link className="authBrand" href="/"><span className="brandMark">遊</span><strong>YT Anime Library</strong></Link>
     <section className="authCard">
       <span className="eyebrow">Welcome back</span><h1>Continue your story.</h1>
-      <p>Sign in to keep your watch progress, favourites and lists in sync.</p>
+      <p>Sign in to access your private profile while the personal library experience is being built.</p>
       <form onSubmit={submit} className="authForm">
         <label>Email<input name="email" type="email" autoComplete="email" required /></label>
         <label>Password<input name="password" type="password" autoComplete="current-password" minLength={12} required /></label>

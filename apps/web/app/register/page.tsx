@@ -26,8 +26,8 @@ export default function RegisterPage() {
   return <main className="authPage">
     <Link className="authBrand" href="/"><span className="brandMark">遊</span><strong>YT Anime Library</strong></Link>
     <section className="authCard">
-      <span className="eyebrow">Create your library</span><h1>Your watchlist starts here.</h1>
-      <p>Create a private profile for progress, favourites and personal collections.</p>
+      <span className="eyebrow">Create your profile</span><h1>Your anime profile starts here.</h1>
+      <p>Create a private account for the catalogue today. Watchlists and viewing progress are coming later.</p>
       <form onSubmit={submit} className="authForm">
         <label>Profile name<input name="name" autoComplete="nickname" maxLength={32} required /></label>
         <label>Email<input name="email" type="email" autoComplete="email" required /></label>
