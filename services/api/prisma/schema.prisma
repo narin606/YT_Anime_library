@@ -154,11 +154,26 @@ model SourceMatch {
 model Account {
   id                 String   @id @default(cuid())
   authProviderUserId String   @unique
-  email              String?
+  email              String   @unique
+  passwordHash       String
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
   profiles Profile[]
+  sessions Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  accountId String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([expiresAt])
 }
 
 model Profile {

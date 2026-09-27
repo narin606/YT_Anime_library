@@ -6,7 +6,8 @@ const environmentSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   FRONTEND_ORIGIN: z.string().url().default("http://localhost:3000"),
   ANILIST_API_URL: z.string().url().default("https://graphql.anilist.co"),
-  ADMIN_API_KEY: z.string().min(24).optional()
+  ADMIN_API_KEY: z.string().min(24).optional(),
+  COOKIE_DOMAIN: z.string().optional()
 });
 
 export type AppConfig = z.infer<typeof environmentSchema>;

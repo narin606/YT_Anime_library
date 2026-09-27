@@ -18,6 +18,7 @@ export default function Home() {
           <a href="#top">Home</a>
           <a href="#discover">Discover</a>
           <a href="#library">My library</a>
+          <a className="signInLink" href="/login">Sign in</a>
         </nav>
       </header>
 

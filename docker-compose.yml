@@ -25,11 +25,17 @@ services:
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
       ANILIST_API_URL: https://graphql.anilist.co
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
     depends_on:
       postgres:
         condition: service_healthy
     ports:
-      - "127.0.0.1:3001:3001"
+      - "127.0.0.1:${API_PORT:-4010}:3001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/health >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
 volumes:
   yt_anime_postgres:
