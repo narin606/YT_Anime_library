@@ -4,13 +4,17 @@ import type { AnimeSearchItem } from "./anilist.js";
 
 const statuses = new Set<AnimeStatus>(["UNKNOWN", "RELEASING", "FINISHED", "NOT_YET_RELEASED", "CANCELLED", "HIATUS"]);
 
+function cleanSynopsis(value: string | null) {
+  return value?.replace(/<br\s*\/?>/gi, "\n").replace(/\n{3,}/g, "\n\n").trim() ?? null;
+}
+
 export function animeCreateData(item: AnimeSearchItem, syncedAt = new Date()) {
   return {
     anilistId: item.anilistId,
     titleEnglish: item.title.english,
     titleRomaji: item.title.romaji,
     titleNative: item.title.native,
-    synopsis: item.synopsis,
+    synopsis: cleanSynopsis(item.synopsis),
     season: item.season,
     seasonYear: item.seasonYear,
     status: statuses.has(item.status as AnimeStatus) ? item.status as AnimeStatus : "UNKNOWN" as AnimeStatus,

@@ -40,6 +40,11 @@ test("AniList results map to idempotent catalogue create and update data", () =>
   assert.deepEqual(animeUpdateData(item, now), animeCreateData(item, now));
 });
 
+test("catalogue synopsis converts provider line-break markup to readable text", () => {
+  const mapped = animeCreateData({ ...item, synopsis: "First paragraph.<br><br>Second paragraph." });
+  assert.equal(mapped.synopsis, "First paragraph.\n\nSecond paragraph.");
+});
+
 test("public catalogue records expose stable detail-page fields", () => {
   assert.deepEqual(publicAnime({
     id: "anime_1",

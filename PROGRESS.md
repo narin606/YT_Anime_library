@@ -204,7 +204,8 @@ Deploy and smoke-test persisted catalogue import/details, then add official YouT
 - Changed search cards to add a selected title to the library and open its detail page.
 - Added a responsive anime detail page with artwork, metadata, synopsis, studios, genres and an explicit no-mapped-episodes state.
 - Added catalogue mapping and frontend import-client regression tests. Five API tests and three web tests pass; both production builds pass.
-- Production deployment and live desktop/mobile browser verification remain pending.
+- Deployed commit `2e4b467` to the mini-PC API and Vercel, imported Frieren through the production flow, and verified its persisted detail page at desktop and mobile sizes with no horizontal overflow, console errors or failed requests.
+- Live visual review found and fixed literal provider `<br>` markup, overly internal empty-state wording, an oversized detail heading and a crowded mobile header. A synopsis-cleaning regression test raises the suite to six API tests plus three web tests.
 
 ### 2026-09-27 - QA fixes and extended production verification
 
