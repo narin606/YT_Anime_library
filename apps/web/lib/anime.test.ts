@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { episodeLabel, importAnime, validateSearchQuery } from "./anime.js";
+import { episodeLabel, getDiscovery, importAnime, validateSearchQuery } from "./anime.js";
 
 test("search validation mirrors the API limits", () => {
   assert.equal(validateSearchQuery("a"), "Enter at least two characters.");
@@ -25,4 +25,12 @@ test("importAnime persists a selected AniList result", async () => {
   assert.equal(anime.id, "anime_1");
   assert.equal(request?.method, "POST");
   assert.equal(request?.body, JSON.stringify({ anilistId: 21 }));
+});
+
+test("getDiscovery validates the homepage row payload", async () => {
+  const response = { playable: [], recent: [], popular: [], season: "FALL", seasonYear: 2026 };
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify(response), { status: 200 });
+  assert.deepEqual(await getDiscovery(fetcher, "https://api.example"), response);
+  const broken: typeof fetch = async () => new Response(JSON.stringify({ playable: [] }), { status: 200 });
+  await assert.rejects(getDiscovery(broken, "https://api.example"), /unexpected response/);
 });

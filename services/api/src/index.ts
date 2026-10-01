@@ -8,7 +8,7 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { ZodError, z } from "zod";
 
-import { AniListError, fetchAnimeById, searchAnime } from "./anilist.js";
+import { AniListError, discoverAnime, fetchAnimeById, searchAnime } from "./anilist.js";
 import { animeCreateData, animeUpdateData, publicAnime } from "./catalog.js";
 import { loadConfig } from "./config.js";
 import { isMalformedJsonError } from "./requestErrors.js";
@@ -117,6 +117,25 @@ app.get("/api/v1/anime", async (_req, res, next) => {
   try {
     const items = await prisma.anime.findMany({ orderBy: { updatedAt: "desc" }, take: 60 });
     res.json({ items: items.map((item) => publicAnime(item)), nextCursor: null });
+  } catch (error) { next(error); }
+});
+
+function currentAnimeSeason(date = new Date()) {
+  const month = date.getUTCMonth() + 1;
+  return { season: month <= 3 ? "WINTER" : month <= 6 ? "SPRING" : month <= 9 ? "SUMMER" : "FALL", seasonYear: date.getUTCFullYear() } as const;
+}
+
+app.get("/api/v1/discovery", async (_req, res, next) => {
+  try {
+    const stored = await prisma.anime.findMany({
+      orderBy: { updatedAt: "desc" }, take: 12,
+      include: { episodes: { include: { videoSources: { where: { availabilityStatus: "AVAILABLE", embeddable: true }, include: { provider: true } } } } }
+    });
+    const playable = stored.filter(anime => anime.episodes.some(episode => episode.videoSources.length > 0)).map(publicAnime);
+    const { season, seasonYear } = currentAnimeSeason();
+    const popular = await discoverAnime(config.ANILIST_API_URL, season, seasonYear, 12);
+    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=1800");
+    res.json({ playable, recent: stored.map(publicAnime), popular: popular.items, season, seasonYear });
   } catch (error) { next(error); }
 });
 

@@ -20,6 +20,9 @@ const ANIME_SEARCH_QUERY = `query AnimeSearch($search: String!, $page: Int!, $pe
 const ANIME_BY_ID_QUERY = `query AnimeById($id: Int!) {
   Page(page: 1, perPage: 1) { pageInfo { currentPage hasNextPage } media(id: $id, type: ANIME) { ${MEDIA_FIELDS} } }
 }`;
+const ANIME_DISCOVERY_QUERY = `query AnimeDiscovery($season: MediaSeason!, $seasonYear: Int!, $perPage: Int!) {
+  Page(page: 1, perPage: $perPage) { pageInfo { currentPage hasNextPage } media(season: $season, seasonYear: $seasonYear, type: ANIME, sort: POPULARITY_DESC) { ${MEDIA_FIELDS} } }
+}`;
 
 const animeSchema = z.object({
   id: z.number().int().positive(),
@@ -139,6 +142,18 @@ export async function searchAnime(
     pageInfo: pageData.pageInfo,
     items: pageData.media.map(normalizeAnime)
   };
+}
+
+export async function discoverAnime(apiUrl: string, season: "WINTER" | "SPRING" | "SUMMER" | "FALL", seasonYear: number, perPage = 12, fetcher: typeof fetch = fetch): Promise<AnimeSearchResult> {
+  let response: Response;
+  try {
+    response = await fetcher(apiUrl, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ query: ANIME_DISCOVERY_QUERY, variables: { season, seasonYear, perPage } }), signal: AbortSignal.timeout(10_000) });
+  } catch { throw new AniListError("AniList could not be reached. Try again shortly."); }
+  if (!response.ok) throw new AniListError(`AniList returned HTTP ${response.status}.`, response.status === 429 ? 503 : 502);
+  let parsed: z.infer<typeof responseSchema>;
+  try { parsed = responseSchema.parse(await response.json()); } catch { throw new AniListError("AniList returned an unexpected response."); }
+  if (parsed.errors?.length || !parsed.data) throw new AniListError(parsed.errors?.[0]?.message ?? "AniList discovery failed.");
+  return { pageInfo: parsed.data.Page.pageInfo, items: parsed.data.Page.media.map(normalizeAnime) };
 }
 
 export async function fetchAnimeById(apiUrl: string, id: number, fetcher: typeof fetch = fetch): Promise<AnimeSearchItem | null> {

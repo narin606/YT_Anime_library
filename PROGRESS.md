@@ -60,7 +60,7 @@ The repository contains a responsive frontend, validated AniList search and cano
 - [x] Add initial home page shell
 - [ ] Add Tailwind CSS if retained
 - [x] Build anime card component
-- [ ] Build horizontal catalogue row
+- [x] Build horizontal catalogue rows
 - [x] Build anime details page
 - [x] Build episode list and empty state
 - [ ] Build player page
@@ -196,6 +196,14 @@ Open improvements:
 Deploy and smoke-test persisted catalogue import/details, then add official YouTube source mapping and playback.
 
 ## Session log
+
+### 2026-10-01 - Homepage anime discovery
+
+- Replaced placeholder library panels with live horizontal rows for **Available to watch**, **Recently added**, and **Popular this season**.
+- Playable and recent rows come from the persisted PostgreSQL catalogue; only verified playable titles display official episode counts.
+- Popular seasonal recommendations come from a validated AniList popularity query and use an explicit **Add** action before opening a stored detail page.
+- Added discovery response validation and seasonal-query regression coverage. Ten API tests and four web tests pass; both production builds pass.
+- Production rollout and responsive browser verification are pending.
 
 ### 2026-10-01 - Official YouTube episode ingestion and playback
 

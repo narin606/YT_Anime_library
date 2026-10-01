@@ -80,3 +80,20 @@ export async function getAnime(id: string): Promise<CatalogueAnime> {
   if (!response.ok || !payload?.anime) throw new Error(payload?.error?.message ?? "Anime not found.");
   return payload.anime;
 }
+
+export interface DiscoveryResult {
+  playable: CatalogueAnime[];
+  recent: CatalogueAnime[];
+  popular: AnimeSearchItem[];
+  season: "WINTER" | "SPRING" | "SUMMER" | "FALL";
+  seasonYear: number;
+}
+
+export async function getDiscovery(fetcher: typeof fetch = fetch, baseUrl?: string): Promise<DiscoveryResult> {
+  const response = await fetcher(`${apiBaseUrl(baseUrl)}/api/v1/discovery`);
+  const payload = await response.json().catch(() => null) as DiscoveryResult | { error?: { message?: string } } | null;
+  if (!response.ok) throw new Error(payload && "error" in payload ? payload.error?.message ?? "Discovery failed." : "Discovery failed.");
+  if (!payload || !("playable" in payload)) throw new Error("Discovery returned an unexpected response.");
+  if (!Array.isArray(payload.playable) || !Array.isArray(payload.recent) || !Array.isArray(payload.popular) || !["WINTER","SPRING","SUMMER","FALL"].includes(payload.season) || !Number.isInteger(payload.seasonYear)) throw new Error("Discovery returned an unexpected response.");
+  return payload;
+}

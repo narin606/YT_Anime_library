@@ -1,10 +1,5 @@
 import { SearchAnime } from "./search-anime";
-
-const libraryRows = [
-  { title: "Continue watching", subtitle: "Your unfinished episodes will return here.", accent: "violet" },
-  { title: "Recently added", subtitle: "Freshly indexed releases from official channels.", accent: "cyan" },
-  { title: "Browse by genre", subtitle: "Fantasy, action, comedy, romance and more.", accent: "gold" }
-];
+import { DiscoveryRows } from "./discovery-rows";
 
 export default function Home() {
   return (
@@ -45,21 +40,7 @@ export default function Home() {
 
       <SearchAnime />
 
-      <section className="library" id="library" aria-labelledby="library-heading">
-        <div className="sectionHeading">
-          <div><span className="eyebrow">Made for watching</span><h2 id="library-heading">Your library, taking shape</h2></div>
-          <p>These collections will fill as episodes and viewing profiles are connected.</p>
-        </div>
-        <div className="libraryGrid">
-          {libraryRows.map((row, index) => (
-            <article className={`libraryCard ${row.accent}`} key={row.title}>
-              <span className="cardNumber">0{index + 1}</span>
-              <h3>{row.title}</h3><p>{row.subtitle}</p>
-              <div className="miniPosters">{[1, 2, 3].map((item) => <span key={item} />)}</div>
-            </article>
-          ))}
-        </div>
-      </section>
+      <DiscoveryRows />
 
       <footer><span>YT Anime Library</span><p>Metadata and viewing state only. Video remains on YouTube.</p></footer>
     </main>

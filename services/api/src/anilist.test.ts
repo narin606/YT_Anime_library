@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { AniListError, searchAnime } from "./anilist.js";
+import { AniListError, discoverAnime, searchAnime } from "./anilist.js";
 
 const payload = {
   data: {
@@ -59,4 +59,17 @@ test("searchAnime rejects malformed provider data", async () => {
     searchAnime("https://graphql.anilist.co", "anime", 1, 12, fetcher),
     (error: unknown) => error instanceof AniListError && /unexpected response/.test(error.message)
   );
+});
+
+test("discoverAnime requests popular anime for the current season", async () => {
+  let body = "";
+  const fetcher: typeof fetch = async (_input, init) => {
+    body = String(init?.body);
+    return new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+  const result = await discoverAnime("https://graphql.anilist.co", "FALL", 2026, 12, fetcher);
+  assert.match(body, /POPULARITY_DESC/);
+  assert.match(body, /"season":"FALL"/);
+  assert.match(body, /"seasonYear":2026/);
+  assert.equal(result.items[0].anilistId, 21);
 });
