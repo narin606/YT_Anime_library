@@ -9,6 +9,7 @@ import helmet from "helmet";
 import { ZodError, z } from "zod";
 
 import { AniListError, discoverAnime, fetchAnimeById, searchAnime } from "./anilist.js";
+import { autoLinkAnime, matchNextPlaylists } from "./autolink.js";
 import { animeCreateData, animeUpdateData, publicAnime } from "./catalog.js";
 import { syncTrustedChannel, TRUSTED_CHANNELS } from "./channels.js";
 import { loadConfig } from "./config.js";
@@ -132,11 +133,13 @@ app.get("/api/v1/discovery", async (_req, res, next) => {
       orderBy: { updatedAt: "desc" }, take: 12,
       include: { episodes: { include: { videoSources: { where: { availabilityStatus: "AVAILABLE", embeddable: true }, include: { provider: true } } } } }
     });
-    const playable = stored.filter(anime => anime.episodes.some(episode => episode.videoSources.length > 0)).map(publicAnime);
+    const playableRecords = stored.filter(anime => anime.episodes.some(episode => episode.videoSources.length > 0));
+    const playable = playableRecords.map(publicAnime);
     const { season, seasonYear } = currentAnimeSeason();
     const popular = await discoverAnime(config.ANILIST_API_URL, season, seasonYear, 12);
     res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=1800");
-    res.json({ playable, recent: stored.map(publicAnime), popular: popular.items, season, seasonYear });
+    const byDistributor = Object.fromEntries(TRUSTED_CHANNELS.map(channel => [channel.name, playableRecords.filter(anime => anime.episodes.some(episode => episode.videoSources.some(source => source.provider.externalChannelId === channel.channelId))).map(publicAnime)]));
+    res.json({ playable, recent: stored.map(publicAnime), popular: popular.items, byDistributor, season, seasonYear });
   } catch (error) { next(error); }
 });
 
@@ -148,7 +151,9 @@ app.post("/api/v1/anime/import", async (req, res, next) => {
     if (!item) { res.status(404).json({ error: { code: "anime_not_found", message: "AniList anime not found." } }); return; }
     const syncedAt = new Date();
     const anime = await prisma.anime.upsert({ where: { anilistId }, create: animeCreateData(item, syncedAt), update: animeUpdateData(item, syncedAt) });
-    res.status(201).json({ anime: publicAnime(anime) });
+    const linkedSources = config.YOUTUBE_API_KEY ? await autoLinkAnime(prisma, config.YOUTUBE_API_KEY, anime.id, item) : [];
+    const hydrated = linkedSources.length ? await prisma.anime.findUniqueOrThrow({ where: { id: anime.id }, include: { episodes: { orderBy: [{ seasonNumber: "asc" }, { episodeNumber: "asc" }], include: { videoSources: { where: { availabilityStatus: "AVAILABLE", embeddable: true }, include: { provider: true } } } } } }) : anime;
+    res.status(201).json({ anime: publicAnime(hydrated), linkedSources });
   } catch (error) { next(error); }
 });
 
@@ -169,6 +174,16 @@ app.post("/api/v1/admin/youtube/channels/sync", async (req, res, next) => {
     if (!trusted) { res.status(400).json({ error: { code: "invalid_channel", message: "Channel is not approved." } }); return; }
     res.json(await syncTrustedChannel(prisma, config.YOUTUBE_API_KEY, trusted));
   } catch (error) { next(error); }
+});
+
+app.post("/api/v1/admin/youtube/matches/run", async (req, res, next) => {
+  try {
+    if (!config.ADMIN_API_KEY || req.get("authorization") !== `Bearer ${config.ADMIN_API_KEY}`) { res.status(401).json({ error: { code: "unauthorized", message: "Valid administrator credentials are required." } }); return; }
+    if (!config.YOUTUBE_API_KEY) { res.status(503).json({ error: { code: "youtube_not_configured", message: "YouTube ingestion is not configured." } }); return; }
+    const { limit }=z.object({limit:z.number().int().min(1).max(50).default(20)}).parse(req.body);
+    const results=await matchNextPlaylists(prisma,config.ANILIST_API_URL,config.YOUTUBE_API_KEY,limit);
+    res.json({results});
+  } catch(error){next(error);}
 });
 
 const sourceImportSchema = z.object({ animeId: z.string().min(1), playlistId: z.string().regex(/^PL[A-Za-z0-9_-]+$/), channelId: z.string().regex(/^UC[A-Za-z0-9_-]+$/), channelName: z.string().trim().min(1).max(200) });

@@ -64,6 +64,7 @@ model Anime {
 
   aliases        AnimeAlias[]
   episodes       Episode[]
+  discoveredPlaylists DiscoveredPlaylist[]
   favourites     Favourite[]
   watchlistItems WatchlistItem[]
 }
@@ -131,9 +132,12 @@ model ApprovedChannel {
 model DiscoveredPlaylist {
   id                 String                 @id @default(cuid())
   approvedChannelId  String
+  animeId            String?
   externalPlaylistId String                 @unique
   title              String
   itemCount          Int
+  matchConfidence    Float?
+  matchReason        String?
   thumbnailUrl       String?
   publishedAt        DateTime?
   classification     PlaylistClassification @default(REVIEW)
@@ -144,8 +148,10 @@ model DiscoveredPlaylist {
   updatedAt          DateTime               @updatedAt
 
   approvedChannel ApprovedChannel @relation(fields: [approvedChannelId], references: [id], onDelete: Cascade)
+  anime Anime? @relation(fields: [animeId], references: [id], onDelete: SetNull)
 
   @@index([approvedChannelId, classification])
+  @@index([animeId])
   @@index([active])
 }
 
