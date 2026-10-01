@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { episodeLabel, getDiscovery, importAnime, validateSearchQuery } from "./anime.js";
+import { EPISODES_PER_PAGE, episodePageCount } from "./pagination.js";
 
 test("search validation mirrors the API limits", () => {
   assert.equal(validateSearchQuery("a"), "Enter at least two characters.");
@@ -13,6 +14,14 @@ test("episode labels use singular and plural wording", () => {
   assert.equal(episodeLabel(1), "1 episode");
   assert.equal(episodeLabel(2), "2 episodes");
   assert.equal(episodeLabel(null), null);
+});
+
+test("long episode lists paginate in groups of thirty", () => {
+  assert.equal(EPISODES_PER_PAGE, 30);
+  assert.equal(episodePageCount(1), 1);
+  assert.equal(episodePageCount(30), 1);
+  assert.equal(episodePageCount(31), 2);
+  assert.equal(episodePageCount(175), 6);
 });
 
 test("importAnime persists a selected AniList result", async () => {

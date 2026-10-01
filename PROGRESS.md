@@ -8,6 +8,11 @@ This file is the source of truth for the current project state. Read it before s
 
 **Distributor-backed catalogue ingestion now supports reviewed AniList mappings and multiple official language/audio/region source variants per anime.**
 
+### 2026-10-02 — episode-list pagination
+
+- Long episode lists now show 30 episodes per page with Previous/Next, numbered page controls, and a visible episode range.
+- Changing language/audio source resets pagination to page 1; mobile controls wrap into a touch-friendly layout.
+
 ### 2026-10-02 — multi-series playlist segmentation
 
 - Diagnosed the 328-entry Ani-One Fairy Tail playlist: YouTube pagination and inventory were complete, but one playlist spans three AniList entries while ingestion assumed one playlist per anime.
