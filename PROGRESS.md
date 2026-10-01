@@ -203,7 +203,8 @@ Deploy and smoke-test persisted catalogue import/details, then add official YouT
 - Added import-time auto-linking and a bounded administrative backfill. The first batch linked 14 playlists representing six distinct anime and sent 26 candidates to review before AniList rate limiting stopped further work safely.
 - Scheduled/live videos without duration are now skipped rather than failing an entire playlist.
 - Discovery remains available from local PostgreSQL when AniList is throttled, and homepage data is grouped into Muse Asia, Ani-One Asia and Tropics Anime Asia rows.
-- Sixteen API tests and four web tests pass; both production builds pass. Live deployment and responsive QA are pending.
+- Sixteen API tests and four web tests pass; both production builds pass. Production QA verified three Muse and four Tropics cards, representative official players, 135 episode records and 197 sources with no overflow, console errors or failed requests. Ani-One remains hidden until a safe match is available.
+- Exported 279 processed unmatched/ambiguous playlists to `/home/brandon/refs/anime-playlist-review.csv` for manual AniList linking. Visual QA clarified card badges as available-source counts and added a mobile swipe cue.
 
 ### 2026-10-01 - Trusted distributor channel inventory
 
