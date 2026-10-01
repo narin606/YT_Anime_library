@@ -10,6 +10,7 @@ import { ZodError, z } from "zod";
 
 import { AniListError, discoverAnime, fetchAnimeById, searchAnime } from "./anilist.js";
 import { animeCreateData, animeUpdateData, publicAnime } from "./catalog.js";
+import { syncTrustedChannel, TRUSTED_CHANNELS } from "./channels.js";
 import { loadConfig } from "./config.js";
 import { isMalformedJsonError } from "./requestErrors.js";
 import { fetchApprovedPlaylist } from "./youtube.js";
@@ -156,6 +157,17 @@ app.get("/api/v1/anime/:id", async (req, res, next) => {
     const anime = await prisma.anime.findUnique({ where: { id: String(req.params.id) }, include: { episodes: { orderBy: [{ seasonNumber: "asc" }, { episodeNumber: "asc" }], include: { videoSources: { where: { availabilityStatus: "AVAILABLE", embeddable: true }, include: { provider: true } } } } } });
     if (!anime) { res.status(404).json({ error: { code: "anime_not_found", message: "Anime not found." } }); return; }
     res.json({ anime: publicAnime(anime) });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/v1/admin/youtube/channels/sync", async (req, res, next) => {
+  try {
+    if (!config.ADMIN_API_KEY || req.get("authorization") !== `Bearer ${config.ADMIN_API_KEY}`) { res.status(401).json({ error: { code: "unauthorized", message: "Valid administrator credentials are required." } }); return; }
+    if (!config.YOUTUBE_API_KEY) { res.status(503).json({ error: { code: "youtube_not_configured", message: "YouTube ingestion is not configured." } }); return; }
+    const input = z.object({ handle: z.enum(["MuseAsia", "AniOneAsia", "TropicsAnimeAsia"]) }).parse(req.body);
+    const trusted = TRUSTED_CHANNELS.find(item => item.handle === input.handle);
+    if (!trusted) { res.status(400).json({ error: { code: "invalid_channel", message: "Channel is not approved." } }); return; }
+    res.json(await syncTrustedChannel(prisma, config.YOUTUBE_API_KEY, trusted));
   } catch (error) { next(error); }
 });
 

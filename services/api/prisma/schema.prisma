@@ -37,6 +37,12 @@ enum MatchStatus {
   REJECTED
 }
 
+enum PlaylistClassification {
+  LIKELY_SERIES
+  REVIEW
+  EXCLUDED
+}
+
 model Anime {
   id             String      @id @default(cuid())
   anilistId      Int?        @unique
@@ -106,6 +112,41 @@ model VideoProvider {
   sources VideoSource[]
 
   @@unique([type, externalChannelId])
+}
+
+model ApprovedChannel {
+  id                    String   @id @default(cuid())
+  externalChannelId     String   @unique
+  name                  String
+  handle                String   @unique
+  uploadsPlaylistId     String?
+  enabled               Boolean  @default(true)
+  lastSyncedAt          DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  playlists DiscoveredPlaylist[]
+}
+
+model DiscoveredPlaylist {
+  id                 String                 @id @default(cuid())
+  approvedChannelId  String
+  externalPlaylistId String                 @unique
+  title              String
+  itemCount          Int
+  thumbnailUrl       String?
+  publishedAt        DateTime?
+  classification     PlaylistClassification @default(REVIEW)
+  active             Boolean                @default(true)
+  firstSeenAt        DateTime               @default(now())
+  lastSeenAt         DateTime               @default(now())
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  approvedChannel ApprovedChannel @relation(fields: [approvedChannelId], references: [id], onDelete: Cascade)
+
+  @@index([approvedChannelId, classification])
+  @@index([active])
 }
 
 model VideoSource {

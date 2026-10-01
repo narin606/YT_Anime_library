@@ -197,6 +197,14 @@ Deploy and smoke-test persisted catalogue import/details, then add official YouT
 
 ## Session log
 
+### 2026-10-01 - Trusted distributor channel inventory
+
+- Verified immutable YouTube channel IDs and uploads-playlist IDs through the YouTube Data API for Muse Asia, Ani-One Asia and Tropics Anime Asia.
+- Added complete `playlists.list` pagination, strict channel-identity validation, conservative playlist classification, and an authenticated idempotent channel-sync endpoint.
+- Added durable approved-channel and discovered-playlist models. Missing playlists are marked inactive on later syncs rather than deleted; no candidate is automatically published by this inventory stage.
+- The first read-only crawl found 1,184 public playlists: Muse Asia 534, Ani-One Asia 536 and Tropics Anime Asia 114. The broad first-pass classifier produced 1,017 likely-series candidates, 148 review candidates and 19 excluded promotional/clip collections; every likely candidate still requires episode-pattern and AniList confidence validation.
+- Thirteen API tests pass, the API production build passes, and all three migrations applied successfully to an isolated PostgreSQL 16 database.
+
 ### 2026-10-01 - Homepage anime discovery
 
 - Replaced placeholder library panels with live horizontal rows for **Available to watch**, **Recently added**, and **Popular this season**.
