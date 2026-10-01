@@ -8,6 +8,11 @@ This file is the source of truth for the current project state. Read it before s
 
 **Distributor-backed catalogue ingestion now supports reviewed AniList mappings and multiple official language/audio/region source variants per anime.**
 
+### 2026-10-02 — preview-safe Muse playlist import
+
+- Linked Muse Asia playlist `PLwLSw1_eDZl1AUEELCJe2ghK9eDI5nGsQ` to AniList `148465` with exactly 12 full English-sub episodes.
+- Episode previews are now excluded before numbering validation, preventing previews and full episodes from being treated as duplicate episode numbers.
+
 ### 2026-10-02 — Frieren season separation
 
 - Moved global episodes 29–38 out of AniList `154587` and into canonical Season 2 AniList `182255` as local episodes 1–10.
