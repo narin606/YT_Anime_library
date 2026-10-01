@@ -203,7 +203,8 @@ Deploy and smoke-test persisted catalogue import/details, then add official YouT
 - Approved playlists are checked for channel ownership, public status, embeddability, unique episode numbers and valid durations before an idempotent transaction persists providers, episodes and video sources.
 - Added official YouTube privacy-enhanced playback and responsive episode cards to anime detail pages.
 - Verified the Tropics Anime Asia English-subtitled playlist for *Jack-of-All-Trades, Party of None*: 12 numbered episodes plus two promotional videos; only Episodes 1–12 are ingested.
-- Nine API tests and three web tests pass; both production builds pass. Production ingestion and browser verification are in progress.
+- Nine API tests and three web tests pass; both production builds pass.
+- Production ingestion persisted exactly Episodes 1–12 with one approved source each. Live desktop/mobile checks confirmed the official YouTube iframe, Episode 1→12 switching, thumbnails and selected state with zero overflow, console errors or failed requests; mobile hero stacking was tightened after visual review.
 
 ### 2026-10-01 - Persisted catalogue and anime details
 
