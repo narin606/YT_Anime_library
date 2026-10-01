@@ -130,11 +130,11 @@ function currentAnimeSeason(date = new Date()) {
 app.get("/api/v1/discovery", async (_req, res, next) => {
   try {
     const stored = await prisma.anime.findMany({
-      orderBy: { updatedAt: "desc" }, take: 12,
+      orderBy: { updatedAt: "desc" }, take: 60,
       include: { episodes: { include: { videoSources: { where: { availabilityStatus: "AVAILABLE", embeddable: true }, include: { provider: true } } } } }
     });
     const playableRecords = stored.filter(anime => anime.episodes.some(episode => episode.videoSources.length > 0));
-    const playable = playableRecords.map(publicAnime);
+    const playable = playableRecords.slice(0, 20).map(publicAnime);
     const { season, seasonYear } = currentAnimeSeason();
     const popular = await discoverAnime(config.ANILIST_API_URL, season, seasonYear, 12).catch(() => ({ items: [], pageInfo: { currentPage: 1, hasNextPage: false } }));
     res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=1800");
