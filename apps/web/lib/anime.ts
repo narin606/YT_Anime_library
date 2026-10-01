@@ -85,6 +85,7 @@ export interface DiscoveryResult {
   playable: CatalogueAnime[];
   recent: CatalogueAnime[];
   popular: AnimeSearchItem[];
+  byDistributor: Record<"Muse Asia" | "Ani-One Asia" | "Tropics Anime Asia", CatalogueAnime[]>;
   season: "WINTER" | "SPRING" | "SUMMER" | "FALL";
   seasonYear: number;
 }
@@ -94,6 +95,6 @@ export async function getDiscovery(fetcher: typeof fetch = fetch, baseUrl?: stri
   const payload = await response.json().catch(() => null) as DiscoveryResult | { error?: { message?: string } } | null;
   if (!response.ok) throw new Error(payload && "error" in payload ? payload.error?.message ?? "Discovery failed." : "Discovery failed.");
   if (!payload || !("playable" in payload)) throw new Error("Discovery returned an unexpected response.");
-  if (!Array.isArray(payload.playable) || !Array.isArray(payload.recent) || !Array.isArray(payload.popular) || !["WINTER","SPRING","SUMMER","FALL"].includes(payload.season) || !Number.isInteger(payload.seasonYear)) throw new Error("Discovery returned an unexpected response.");
+  if (!Array.isArray(payload.playable) || !Array.isArray(payload.recent) || !Array.isArray(payload.popular) || !payload.byDistributor || !["Muse Asia", "Ani-One Asia", "Tropics Anime Asia"].every(name => Array.isArray(payload.byDistributor[name as keyof typeof payload.byDistributor])) || !["WINTER","SPRING","SUMMER","FALL"].includes(payload.season) || !Number.isInteger(payload.seasonYear)) throw new Error("Discovery returned an unexpected response.");
   return payload;
 }

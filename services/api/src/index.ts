@@ -136,7 +136,7 @@ app.get("/api/v1/discovery", async (_req, res, next) => {
     const playableRecords = stored.filter(anime => anime.episodes.some(episode => episode.videoSources.length > 0));
     const playable = playableRecords.map(publicAnime);
     const { season, seasonYear } = currentAnimeSeason();
-    const popular = await discoverAnime(config.ANILIST_API_URL, season, seasonYear, 12);
+    const popular = await discoverAnime(config.ANILIST_API_URL, season, seasonYear, 12).catch(() => ({ items: [], pageInfo: { currentPage: 1, hasNextPage: false } }));
     res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=1800");
     const byDistributor = Object.fromEntries(TRUSTED_CHANNELS.map(channel => [channel.name, playableRecords.filter(anime => anime.episodes.some(episode => episode.videoSources.some(source => source.provider.externalChannelId === channel.channelId))).map(publicAnime)]));
     res.json({ playable, recent: stored.map(publicAnime), popular: popular.items, byDistributor, season, seasonYear });

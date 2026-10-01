@@ -197,6 +197,14 @@ Deploy and smoke-test persisted catalogue import/details, then add official YouT
 
 ## Session log
 
+### 2026-10-01 - Strict playlist matching and distributor rows
+
+- Added exact normalized playlist-to-AniList matching, plausible episode-count checks, official channel validation and idempotent source ingestion.
+- Added import-time auto-linking and a bounded administrative backfill. The first batch linked 14 playlists representing six distinct anime and sent 26 candidates to review before AniList rate limiting stopped further work safely.
+- Scheduled/live videos without duration are now skipped rather than failing an entire playlist.
+- Discovery remains available from local PostgreSQL when AniList is throttled, and homepage data is grouped into Muse Asia, Ani-One Asia and Tropics Anime Asia rows.
+- Sixteen API tests and four web tests pass; both production builds pass. Live deployment and responsive QA are pending.
+
 ### 2026-10-01 - Trusted distributor channel inventory
 
 - Verified immutable YouTube channel IDs and uploads-playlist IDs through the YouTube Data API for Muse Asia, Ani-One Asia and Tropics Anime Asia.

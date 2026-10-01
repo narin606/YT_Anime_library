@@ -28,7 +28,7 @@ test("importAnime persists a selected AniList result", async () => {
 });
 
 test("getDiscovery validates the homepage row payload", async () => {
-  const response = { playable: [], recent: [], popular: [], season: "FALL", seasonYear: 2026 };
+  const response = { playable: [], recent: [], popular: [], byDistributor: { "Muse Asia": [], "Ani-One Asia": [], "Tropics Anime Asia": [] }, season: "FALL", seasonYear: 2026 };
   const fetcher: typeof fetch = async () => new Response(JSON.stringify(response), { status: 200 });
   assert.deepEqual(await getDiscovery(fetcher, "https://api.example"), response);
   const broken: typeof fetch = async () => new Response(JSON.stringify({ playable: [] }), { status: 200 });
