@@ -1,10 +1,21 @@
 # Project Progress
 
-Last updated: 2026-10-01
+Last updated: 2026-10-02
 
 This file is the source of truth for the current project state. Read it before starting work and update it before ending a work session.
 
 ## Current phase
+
+**Distributor-backed catalogue ingestion now supports reviewed AniList mappings and multiple official language/audio/region source variants per anime.**
+
+### 2026-10-02 — reviewed playlist variants
+
+- Imported all 279 language/region annotations from the user-reviewed workbook.
+- Validated 33 direct playlist-to-AniList mappings covering 26 unique anime.
+- Accepted 22 approved-channel playlists with 296 numbered episode sources; four had fewer than four valid episodes and seven contained conflicting duplicate episode numbers, so those remain in review.
+- Added Ani-One `#episode` parsing, playlist provenance, source language/audio/region metadata, and an episode-player variant selector.
+- Canonical anime identity remains the AniList ID; alternate subtitle/dub/region playlists become sources under one anime rather than duplicate catalogue cards.
+- API and web tests pass (20/20), both production builds pass, and the API deployment is healthy.
 
 **The persisted catalogue and anime-details foundation is implemented.**
 

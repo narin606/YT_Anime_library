@@ -195,7 +195,16 @@ app.post("/api/v1/admin/youtube/playlists/import", async (req, res, next) => {
     if (!await prisma.anime.findUnique({ where: { id: input.animeId }, select: { id: true } })) { res.status(404).json({ error: { code: "anime_not_found", message: "Anime not found." } }); return; }
     const discovered = await prisma.discoveredPlaylist.findUnique({ where: { externalPlaylistId: input.playlistId }, include: { approvedChannel: true } });
     if (!discovered || discovered.approvedChannel.externalChannelId !== input.channelId) { res.status(400).json({ error: { code: "unapproved_playlist", message: "Playlist is not in the approved channel inventory." } }); return; }
-    const playlist = await fetchApprovedPlaylist(config.YOUTUBE_API_KEY, input.playlistId, input.channelId);
+    let playlist;
+    try {
+      playlist = await fetchApprovedPlaylist(config.YOUTUBE_API_KEY, input.playlistId, input.channelId);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Playlist contains duplicate episode numbers") {
+        res.status(400).json({ error: { code: "duplicate_episode_numbers", message: "Playlist contains multiple videos for the same episode number and requires review." } });
+        return;
+      }
+      throw error;
+    }
     if (playlist.episodes.length < 4) { res.status(400).json({ error: { code: "insufficient_episodes", message: "Playlist has fewer than four valid numbered episodes." } }); return; }
     const language = input.language ?? discovered.language;
     const audioType = input.audioType ?? discovered.audioType;
