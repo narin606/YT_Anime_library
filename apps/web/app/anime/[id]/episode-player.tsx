@@ -10,7 +10,7 @@ function variantKey(source: Source){return [source.language??"Unknown",source.au
 function variantLabel(source: Source){return [source.language,source.audioType,source.region].filter(Boolean).join(" · ")||"Official source"}
 
 export function EpisodePlayer({ episodes }: { episodes: Episode[] }) {
-  const variants=useMemo(()=>{const map=new Map<string,Source>();for(const episode of episodes)for(const source of episode.sources)if(!map.has(variantKey(source)))map.set(variantKey(source),source);return [...map.entries()]},[episodes]);
+  const variants=useMemo(()=>{const map=new Map<string,{source:Source,count:number}>();for(const episode of episodes)for(const source of episode.sources){const key=variantKey(source),known=map.get(key);if(known)known.count+=1;else map.set(key,{source,count:1})}return [...map.entries()].sort((a,b)=>b[1].count-a[1].count).map(([key,value])=>[key,value.source] as [string,Source])},[episodes]);
   const [variant,setVariant]=useState(variants[0]?.[0]??"");
   const playable=episodes.filter(episode=>episode.sources.some(source=>variantKey(source)===variant));
   const [selectedNumber,setSelectedNumber]=useState<number|null>(playable[0]?.episodeNumber??null);
