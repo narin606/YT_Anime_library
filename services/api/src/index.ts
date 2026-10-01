@@ -14,6 +14,7 @@ import { animeCreateData, animeUpdateData, publicAnime } from "./catalog.js";
 import { syncTrustedChannel, TRUSTED_CHANNELS } from "./channels.js";
 import { loadConfig } from "./config.js";
 import { isMalformedJsonError } from "./requestErrors.js";
+import { ingestSegmentedPlaylist } from "./segments.js";
 import { fetchApprovedPlaylist } from "./youtube.js";
 
 const config = loadConfig();
@@ -184,6 +185,16 @@ app.post("/api/v1/admin/youtube/matches/run", async (req, res, next) => {
     const results=await matchNextPlaylists(prisma,config.ANILIST_API_URL,config.YOUTUBE_API_KEY,limit);
     res.json({results});
   } catch(error){next(error);}
+});
+
+const segmentedPlaylistSchema=z.object({playlistId:z.string().regex(/^PL[A-Za-z0-9_-]+$/),segments:z.array(z.object({animeId:z.string().min(1),sourceEpisodeStart:z.number().int().positive(),sourceEpisodeEnd:z.number().int().positive(),animeEpisodeStart:z.number().int().positive().default(1)})).min(2).max(20)});
+app.post("/api/v1/admin/youtube/playlists/segment",async(req,res,next)=>{
+  try{
+    if(!config.ADMIN_API_KEY||req.get("authorization")!==`Bearer ${config.ADMIN_API_KEY}`){res.status(401).json({error:{code:"unauthorized",message:"Valid administrator credentials are required."}});return;}
+    if(!config.YOUTUBE_API_KEY){res.status(503).json({error:{code:"youtube_not_configured",message:"YouTube ingestion is not configured."}});return;}
+    const input=segmentedPlaylistSchema.parse(req.body);
+    res.json(await ingestSegmentedPlaylist(prisma,config.YOUTUBE_API_KEY,input.playlistId,input.segments));
+  }catch(error){next(error);}
 });
 
 const sourceImportSchema = z.object({ animeId: z.string().min(1), playlistId: z.string().regex(/^PL[A-Za-z0-9_-]+$/), channelId: z.string().regex(/^UC[A-Za-z0-9_-]+$/), channelName: z.string().trim().min(1).max(200), language: z.string().trim().min(1).max(80).optional(), audioType: z.enum(["Sub", "Dub", "Original"]).optional(), region: z.string().trim().min(1).max(80).optional() });

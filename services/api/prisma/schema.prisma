@@ -65,6 +65,7 @@ model Anime {
   aliases        AnimeAlias[]
   episodes       Episode[]
   discoveredPlaylists DiscoveredPlaylist[]
+  playlistSegments PlaylistAnimeSegment[]
   favourites     Favourite[]
   watchlistItems WatchlistItem[]
 }
@@ -153,10 +154,29 @@ model DiscoveredPlaylist {
   approvedChannel ApprovedChannel @relation(fields: [approvedChannelId], references: [id], onDelete: Cascade)
   anime Anime? @relation(fields: [animeId], references: [id], onDelete: SetNull)
   videoSources VideoSource[]
+  animeSegments PlaylistAnimeSegment[]
 
   @@index([approvedChannelId, classification])
   @@index([animeId])
   @@index([active])
+}
+
+model PlaylistAnimeSegment {
+  id                   String   @id @default(cuid())
+  discoveredPlaylistId String
+  animeId              String
+  sourceEpisodeStart   Int
+  sourceEpisodeEnd     Int
+  animeEpisodeStart    Int      @default(1)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  discoveredPlaylist DiscoveredPlaylist @relation(fields: [discoveredPlaylistId], references: [id], onDelete: Cascade)
+  anime              Anime              @relation(fields: [animeId], references: [id], onDelete: Cascade)
+
+  @@unique([discoveredPlaylistId, animeId])
+  @@index([discoveredPlaylistId, sourceEpisodeStart, sourceEpisodeEnd])
+  @@index([animeId])
 }
 
 model VideoSource {

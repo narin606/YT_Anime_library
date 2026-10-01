@@ -8,6 +8,12 @@ This file is the source of truth for the current project state. Read it before s
 
 **Distributor-backed catalogue ingestion now supports reviewed AniList mappings and multiple official language/audio/region source variants per anime.**
 
+### 2026-10-02 — multi-series playlist segmentation
+
+- Diagnosed the 328-entry Ani-One Fairy Tail playlist: YouTube pagination and inventory were complete, but one playlist spans three AniList entries while ingestion assumed one playlist per anime.
+- Added explicit, non-overlapping playlist segments with local episode renumbering so combined distributor playlists can safely populate sequels without duplicating anime records.
+- Fairy Tail boundaries are verified against AniList: 1–175 (`6702`), 176–277 (`20626`, local 1–102), and 278–328 (`99749`, local 1–51).
+
 ### 2026-10-02 — reviewed playlist variants
 
 - Imported all 279 language/region annotations from the user-reviewed workbook.
