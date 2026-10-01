@@ -203,7 +203,8 @@ Deploy and smoke-test persisted catalogue import/details, then add official YouT
 - Playable and recent rows come from the persisted PostgreSQL catalogue; only verified playable titles display official episode counts.
 - Popular seasonal recommendations come from a validated AniList popularity query and use an explicit **Add** action before opening a stored detail page.
 - Added discovery response validation and seasonal-query regression coverage. Ten API tests and four web tests pass; both production builds pass.
-- Production rollout and responsive browser verification are pending.
+- Production verification passed on Vercel deployment `dpl_9yXfA3xqi91VCaPnTvru1SE51Q9W`: desktop cards are capped at 220px; mobile cards are 181px with a visible horizontal-scroll cue; all three rows returned the expected 1 playable, 2 recent and 12 seasonal titles with no page overflow, console errors or failed requests.
+- The playable card opened the correct 12-episode detail page. Visual QA found and resolved an oversized single-card rail before final deployment.
 
 ### 2026-10-01 - Official YouTube episode ingestion and playback
 
