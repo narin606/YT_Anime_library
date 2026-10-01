@@ -204,6 +204,7 @@ Deploy and smoke-test persisted catalogue import/details, then add official YouT
 - Added durable approved-channel and discovered-playlist models. Missing playlists are marked inactive on later syncs rather than deleted; no candidate is automatically published by this inventory stage.
 - The first read-only crawl found 1,184 public playlists: Muse Asia 534, Ani-One Asia 536 and Tropics Anime Asia 114. The broad first-pass classifier produced 1,017 likely-series candidates, 148 review candidates and 19 excluded promotional/clip collections; every likely candidate still requires episode-pattern and AniList confidence validation.
 - Thirteen API tests pass, the API production build passes, and all three migrations applied successfully to an isolated PostgreSQL 16 database.
+- Production migration and authenticated synchronization completed successfully. PostgreSQL contains exactly 534 active Muse Asia, 536 active Ani-One Asia and 114 active Tropics Anime Asia playlists; the public API and database remained healthy. This is an inventory baseline only—no broad classifier candidate was published automatically.
 
 ### 2026-10-01 - Homepage anime discovery
 
