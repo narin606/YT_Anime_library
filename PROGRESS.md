@@ -174,7 +174,7 @@ The repository contains a responsive frontend, validated AniList search and cano
 
 1. YouTube API credentials have not been created/configured.
 2. Automated PostgreSQL backup storage and retention are not configured yet.
-3. Production rollout and live-browser verification of catalogue import/details are pending.
+3. No blocker remains for persisted catalogue import/details; official YouTube source ingestion and automated backups are the next operational work.
 
 ## QA findings from production smoke test
 
@@ -206,6 +206,7 @@ Deploy and smoke-test persisted catalogue import/details, then add official YouT
 - Added catalogue mapping and frontend import-client regression tests. Five API tests and three web tests pass; both production builds pass.
 - Deployed commit `2e4b467` to the mini-PC API and Vercel, imported Frieren through the production flow, and verified its persisted detail page at desktop and mobile sizes with no horizontal overflow, console errors or failed requests.
 - Live visual review found and fixed literal provider `<br>` markup, overly internal empty-state wording, an oversized detail heading and a crowded mobile header. A synopsis-cleaning regression test raises the suite to six API tests plus three web tests.
+- Final production verification passed on Vercel deployment `dpl_4bV4KqkGAqpoy5CmHUR1MZb9YX5Y`: desktop 1440×1000 and mobile 412×915 both had zero horizontal overflow, console errors or failed requests; screenshots showed no clipping, overlap, raw markup or broken assets.
 
 ### 2026-09-27 - QA fixes and extended production verification
 
