@@ -36,7 +36,9 @@ export function validatePlaylistEpisodes(videos: YouTubeVideo[], approvedChannel
     const episodeNumber = parseEpisodeNumber(video.title);
     if (episodeNumber === null) return [];
     if (video.privacyStatus !== "public" || !video.embeddable) return [];
-    return [{ ...video, episodeNumber, durationSeconds: parseIsoDurationSeconds(video.duration) }];
+    const durationSeconds = parseIsoDurationSeconds(video.duration);
+    if (durationSeconds <= 0) return [];
+    return [{ ...video, episodeNumber, durationSeconds }];
   }).sort((a, b) => a.episodeNumber - b.episodeNumber);
   if (new Set(episodes.map(episode => episode.episodeNumber)).size !== episodes.length) throw new Error("Playlist contains duplicate episode numbers");
   return episodes;
@@ -57,7 +59,7 @@ const channelResponseSchema = z.object({ items: z.array(z.object({ id: z.string(
 const channelPlaylistsResponseSchema = z.object({ nextPageToken: z.string().optional(), items: z.array(z.object({ id: z.string(), snippet: z.object({ title: z.string(), channelId: z.string(), channelTitle: z.string(), publishedAt: z.string().optional(), thumbnails: z.record(z.string(), z.object({ url: z.string().url() })).optional() }), contentDetails: z.object({ itemCount: z.number().int().nonnegative() }), status: z.object({ privacyStatus: z.string() }) })) });
 const playlistResponseSchema = z.object({ items: z.array(z.object({ snippet: z.object({ title: z.string(), channelId: z.string(), channelTitle: z.string() }), contentDetails: z.object({ itemCount: z.number().int() }), status: z.object({ privacyStatus: z.string() }) })) });
 const playlistItemsSchema = z.object({ nextPageToken: z.string().optional(), items: z.array(z.object({ contentDetails: z.object({ videoId: z.string() }) })) });
-const videosResponseSchema = z.object({ items: z.array(z.object({ id: z.string(), snippet: z.object({ title: z.string(), channelId: z.string(), channelTitle: z.string(), publishedAt: z.string().optional(), thumbnails: z.record(z.string(), z.object({ url: z.string().url() })).optional() }), contentDetails: z.object({ duration: z.string() }), status: z.object({ embeddable: z.boolean(), privacyStatus: z.string() }) })) });
+const videosResponseSchema = z.object({ items: z.array(z.object({ id: z.string(), snippet: z.object({ title: z.string(), channelId: z.string(), channelTitle: z.string(), publishedAt: z.string().optional(), thumbnails: z.record(z.string(), z.object({ url: z.string().url() })).optional() }), contentDetails: z.object({ duration: z.string().optional() }), status: z.object({ embeddable: z.boolean(), privacyStatus: z.string() }) })) });
 
 async function youtubeGet(apiKey: string, resource: string, params: Record<string, string>, fetcher: typeof fetch) {
   const url = new URL(`https://www.googleapis.com/youtube/v3/${resource}`);
@@ -101,7 +103,7 @@ export async function fetchApprovedPlaylist(credential: string, playlistId: stri
   const videos: YouTubeVideo[] = [];
   for (let index = 0; index < ids.length; index += 50) {
     const page = videosResponseSchema.parse(await youtubeGet(credential, "videos", { part: "snippet,contentDetails,status", id: ids.slice(index, index + 50).join(",") }, fetcher));
-    videos.push(...page.items.map(video => ({ id: video.id, title: video.snippet.title, channelId: video.snippet.channelId, channelTitle: video.snippet.channelTitle, duration: video.contentDetails.duration, embeddable: video.status.embeddable, privacyStatus: video.status.privacyStatus, thumbnailUrl: video.snippet.thumbnails?.maxres?.url ?? video.snippet.thumbnails?.high?.url ?? video.snippet.thumbnails?.medium?.url ?? null, publishedAt: video.snippet.publishedAt ?? null })));
+    videos.push(...page.items.filter(video => video.contentDetails.duration).map(video => ({ id: video.id, title: video.snippet.title, channelId: video.snippet.channelId, channelTitle: video.snippet.channelTitle, duration: video.contentDetails.duration!, embeddable: video.status.embeddable, privacyStatus: video.status.privacyStatus, thumbnailUrl: video.snippet.thumbnails?.maxres?.url ?? video.snippet.thumbnails?.high?.url ?? video.snippet.thumbnails?.medium?.url ?? null, publishedAt: video.snippet.publishedAt ?? null })));
   }
   return { playlistTitle: playlist.snippet.title, channelTitle: playlist.snippet.channelTitle, episodes: validatePlaylistEpisodes(videos, approvedChannelId) };
 }

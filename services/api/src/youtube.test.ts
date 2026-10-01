@@ -17,6 +17,11 @@ test("ISO 8601 YouTube durations become seconds", () => {
   assert.equal(parseIsoDurationSeconds("PT1H2M3S"), 3723);
 });
 
+test("approved playlist validation ignores videos without usable duration", () => {
+  const videos = [{ id: "scheduled", title: "Title Episode 03", channelId, channelTitle: "Tropics Anime Asia", duration: "PT0S", embeddable: true, privacyStatus: "public", thumbnailUrl: null, publishedAt: null }];
+  assert.deepEqual(validatePlaylistEpisodes(videos, channelId), []);
+});
+
 test("approved playlist validation keeps public embeddable episodes from one channel", () => {
   const videos = [
     { id: "video01", title: "Title Episode 01", channelId, channelTitle: "Tropics Anime Asia", duration: "PT23M57S", embeddable: true, privacyStatus: "public", thumbnailUrl: "https://img.example/1.jpg", publishedAt: "2026-01-01T00:00:00Z" },
