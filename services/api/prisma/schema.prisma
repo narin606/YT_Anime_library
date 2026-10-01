@@ -152,6 +152,7 @@ model DiscoveredPlaylist {
 
   approvedChannel ApprovedChannel @relation(fields: [approvedChannelId], references: [id], onDelete: Cascade)
   anime Anime? @relation(fields: [animeId], references: [id], onDelete: SetNull)
+  videoSources VideoSource[]
 
   @@index([approvedChannelId, classification])
   @@index([animeId])
@@ -162,6 +163,7 @@ model VideoSource {
   id                 String             @id @default(cuid())
   episodeId          String?
   providerId         String
+  discoveredPlaylistId String?
   externalVideoId    String             @unique
   titleRaw           String
   descriptionRaw     String?            @db.Text
@@ -179,9 +181,11 @@ model VideoSource {
 
   episode  Episode?      @relation(fields: [episodeId], references: [id], onDelete: SetNull)
   provider VideoProvider @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  discoveredPlaylist DiscoveredPlaylist? @relation(fields: [discoveredPlaylistId], references: [id], onDelete: SetNull)
   matches  SourceMatch[]
 
   @@index([episodeId])
+  @@index([discoveredPlaylistId])
   @@index([providerId])
   @@index([availabilityStatus])
 }

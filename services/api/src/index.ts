@@ -186,20 +186,27 @@ app.post("/api/v1/admin/youtube/matches/run", async (req, res, next) => {
   } catch(error){next(error);}
 });
 
-const sourceImportSchema = z.object({ animeId: z.string().min(1), playlistId: z.string().regex(/^PL[A-Za-z0-9_-]+$/), channelId: z.string().regex(/^UC[A-Za-z0-9_-]+$/), channelName: z.string().trim().min(1).max(200) });
+const sourceImportSchema = z.object({ animeId: z.string().min(1), playlistId: z.string().regex(/^PL[A-Za-z0-9_-]+$/), channelId: z.string().regex(/^UC[A-Za-z0-9_-]+$/), channelName: z.string().trim().min(1).max(200), language: z.string().trim().min(1).max(80).optional(), audioType: z.enum(["Sub", "Dub", "Original"]).optional(), region: z.string().trim().min(1).max(80).optional() });
 app.post("/api/v1/admin/youtube/playlists/import", async (req, res, next) => {
   try {
     if (!config.ADMIN_API_KEY || req.get("authorization") !== `Bearer ${config.ADMIN_API_KEY}`) { res.status(401).json({ error: { code: "unauthorized", message: "Valid administrator credentials are required." } }); return; }
     if (!config.YOUTUBE_API_KEY) { res.status(503).json({ error: { code: "youtube_not_configured", message: "YouTube ingestion is not configured." } }); return; }
     const input = sourceImportSchema.parse(req.body);
     if (!await prisma.anime.findUnique({ where: { id: input.animeId }, select: { id: true } })) { res.status(404).json({ error: { code: "anime_not_found", message: "Anime not found." } }); return; }
+    const discovered = await prisma.discoveredPlaylist.findUnique({ where: { externalPlaylistId: input.playlistId }, include: { approvedChannel: true } });
+    if (!discovered || discovered.approvedChannel.externalChannelId !== input.channelId) { res.status(400).json({ error: { code: "unapproved_playlist", message: "Playlist is not in the approved channel inventory." } }); return; }
     const playlist = await fetchApprovedPlaylist(config.YOUTUBE_API_KEY, input.playlistId, input.channelId);
+    if (playlist.episodes.length < 4) { res.status(400).json({ error: { code: "insufficient_episodes", message: "Playlist has fewer than four valid numbered episodes." } }); return; }
+    const language = input.language ?? discovered.language;
+    const audioType = input.audioType ?? discovered.audioType;
+    const region = input.region ?? discovered.region;
     const result = await prisma.$transaction(async tx => {
       const provider = await tx.videoProvider.upsert({ where: { type_externalChannelId: { type: "YOUTUBE", externalChannelId: input.channelId } }, create: { type: "YOUTUBE", name: "YouTube", externalChannelId: input.channelId, externalChannelName: input.channelName }, update: { externalChannelName: input.channelName, enabled: true } });
       for (const item of playlist.episodes) {
         const episode = await tx.episode.upsert({ where: { animeId_seasonNumber_episodeNumber: { animeId: input.animeId, seasonNumber: 1, episodeNumber: item.episodeNumber } }, create: { animeId: input.animeId, seasonNumber: 1, episodeNumber: item.episodeNumber, title: `Episode ${item.episodeNumber}`, durationSeconds: item.durationSeconds }, update: { durationSeconds: item.durationSeconds } });
-        await tx.videoSource.upsert({ where: { externalVideoId: item.id }, create: { episodeId: episode.id, providerId: provider.id, externalVideoId: item.id, titleRaw: item.title, thumbnailUrl: item.thumbnailUrl, publishedAt: item.publishedAt ? new Date(item.publishedAt) : null, embeddable: true, availabilityStatus: "AVAILABLE", lastCheckedAt: new Date() }, update: { episodeId: episode.id, providerId: provider.id, titleRaw: item.title, thumbnailUrl: item.thumbnailUrl, publishedAt: item.publishedAt ? new Date(item.publishedAt) : null, embeddable: true, availabilityStatus: "AVAILABLE", lastCheckedAt: new Date() } });
+        await tx.videoSource.upsert({ where: { externalVideoId: item.id }, create: { episodeId: episode.id, providerId: provider.id, discoveredPlaylistId: discovered.id, externalVideoId: item.id, titleRaw: item.title, thumbnailUrl: item.thumbnailUrl, publishedAt: item.publishedAt ? new Date(item.publishedAt) : null, language, audioType, region, embeddable: true, availabilityStatus: "AVAILABLE", lastCheckedAt: new Date() }, update: { episodeId: episode.id, providerId: provider.id, discoveredPlaylistId: discovered.id, titleRaw: item.title, thumbnailUrl: item.thumbnailUrl, publishedAt: item.publishedAt ? new Date(item.publishedAt) : null, language, audioType, region, embeddable: true, availabilityStatus: "AVAILABLE", lastCheckedAt: new Date() } });
       }
+      await tx.discoveredPlaylist.update({ where: { id: discovered.id }, data: { animeId: input.animeId, language, audioType, region, matchConfidence: 1, matchReason: "Manual AniList mapping confirmed in review workbook" } });
       return { episodeCount: playlist.episodes.length, providerId: provider.id };
     });
     res.json({ playlist: { id: input.playlistId, title: playlist.playlistTitle, channelId: input.channelId, channelName: input.channelName }, ...result });
