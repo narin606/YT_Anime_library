@@ -16,12 +16,12 @@ test("episode labels use singular and plural wording", () => {
   assert.equal(episodeLabel(null), null);
 });
 
-test("long episode lists paginate in groups of thirty", () => {
-  assert.equal(EPISODES_PER_PAGE, 30);
+test("long episode lists paginate in groups of fifteen", () => {
+  assert.equal(EPISODES_PER_PAGE, 15);
   assert.equal(episodePageCount(1), 1);
-  assert.equal(episodePageCount(30), 1);
-  assert.equal(episodePageCount(31), 2);
-  assert.equal(episodePageCount(175), 6);
+  assert.equal(episodePageCount(15), 1);
+  assert.equal(episodePageCount(16), 2);
+  assert.equal(episodePageCount(175), 12);
 });
 
 test("importAnime persists a selected AniList result", async () => {

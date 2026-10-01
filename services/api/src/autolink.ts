@@ -9,7 +9,16 @@ export async function autoLinkAnime(prisma: PrismaClient, youtubeKey: string, an
   const matches = candidates.map(playlist => ({ playlist, match: matchPlaylistToAnime(playlist.title, playlist.itemCount, item) })).filter(result => result.match.publishable);
   const results: Array<{ playlistId: string; channelName: string; episodeCount: number }> = [];
   for (const { playlist, match } of matches) {
-    const source = await fetchApprovedPlaylist(youtubeKey, playlist.externalPlaylistId, playlist.approvedChannel.externalChannelId);
+    let source;
+    try {
+      source = await fetchApprovedPlaylist(youtubeKey, playlist.externalPlaylistId, playlist.approvedChannel.externalChannelId);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Playlist contains duplicate episode numbers") {
+        await prisma.discoveredPlaylist.update({ where: { id: playlist.id }, data: { classification: "REVIEW", matchConfidence: match.confidence, matchReason: "Duplicate episode numbers require manual review" } });
+        continue;
+      }
+      throw error;
+    }
     if (source.episodes.length < 4) { await prisma.discoveredPlaylist.update({ where: { id: playlist.id }, data: { classification: "REVIEW", matchConfidence: match.confidence, matchReason: "Fewer than four valid numbered episodes" } }); continue; }
     await prisma.$transaction(async tx => {
       const provider = await tx.videoProvider.upsert({ where: { type_externalChannelId: { type: "YOUTUBE", externalChannelId: playlist.approvedChannel.externalChannelId } }, create: { type: "YOUTUBE", name: "YouTube", externalChannelId: playlist.approvedChannel.externalChannelId, externalChannelName: playlist.approvedChannel.name }, update: { externalChannelName: playlist.approvedChannel.name, enabled: true } });

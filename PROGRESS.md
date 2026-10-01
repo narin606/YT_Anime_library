@@ -8,9 +8,15 @@ This file is the source of truth for the current project state. Read it before s
 
 **Distributor-backed catalogue ingestion now supports reviewed AniList mappings and multiple official language/audio/region source variants per anime.**
 
+### 2026-10-02 — Frieren season separation
+
+- Moved global episodes 29–38 out of AniList `154587` and into canonical Season 2 AniList `182255` as local episodes 1–10.
+- Season 1 now contains only episodes 1–28, retaining separate English Sub and English Dub variants.
+- Automatic matching now sends duplicate episode-number playlists to review instead of failing metadata import with HTTP 500.
+
 ### 2026-10-02 — episode-list pagination
 
-- Long episode lists now show 30 episodes per page with Previous/Next, numbered page controls, and a visible episode range.
+- Long episode lists now show 15 episodes per page with Previous/Next, numbered page controls, and a visible episode range.
 - Changing language/audio source resets pagination to page 1; mobile controls wrap into a touch-friendly layout.
 
 ### 2026-10-02 — multi-series playlist segmentation
