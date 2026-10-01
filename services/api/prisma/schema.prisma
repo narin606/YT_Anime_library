@@ -136,6 +136,9 @@ model DiscoveredPlaylist {
   externalPlaylistId String                 @unique
   title              String
   itemCount          Int
+  language           String?
+  audioType          String?
+  region             String?
   matchConfidence    Float?
   matchReason        String?
   thumbnailUrl       String?
@@ -167,6 +170,9 @@ model VideoSource {
   embeddable         Boolean?
   availabilityStatus AvailabilityStatus @default(UNKNOWN)
   regionInfo         Json?
+  language           String?
+  audioType          String?
+  region              String?
   lastCheckedAt      DateTime?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt

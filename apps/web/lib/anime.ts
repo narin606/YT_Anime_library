@@ -24,7 +24,7 @@ export interface AnimeSearchResult {
 
 export interface CatalogueAnime extends Omit<AnimeSearchItem, "coverColor" | "anilistUrl"> {
   id: string;
-  episodes: Array<{ id: string; seasonNumber: number; episodeNumber: number; title: string | null; durationSeconds: number | null; sources: Array<{ provider: "YOUTUBE"; videoId: string; thumbnailUrl: string | null; channelName: string | null; embeddable: boolean | null; availabilityStatus: string }> }>;
+  episodes: Array<{ id: string; seasonNumber: number; episodeNumber: number; title: string | null; durationSeconds: number | null; sources: Array<{ provider: "YOUTUBE"; videoId: string; thumbnailUrl: string | null; channelName: string | null; language: string | null; audioType: string | null; region: string | null; embeddable: boolean | null; availabilityStatus: string }> }>;
 }
 
 function apiBaseUrl(override?: string) {

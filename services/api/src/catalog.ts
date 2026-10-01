@@ -35,7 +35,7 @@ type EpisodeRecord = {
   episodeNumber: number;
   title: string | null;
   durationSeconds: number | null;
-  videoSources?: Array<{ externalVideoId: string; thumbnailUrl: string | null; embeddable: boolean | null; availabilityStatus: string; provider: { externalChannelName: string | null } }>;
+  videoSources?: Array<{ externalVideoId: string; thumbnailUrl: string | null; embeddable: boolean | null; availabilityStatus: string; language?: string | null; audioType?: string | null; region?: string | null; provider: { externalChannelName: string | null } }>;
 };
 
 type AnimeRecord = {
@@ -83,6 +83,9 @@ export function publicAnime(anime: AnimeRecord) {
         videoId: source.externalVideoId,
         thumbnailUrl: source.thumbnailUrl,
         channelName: source.provider.externalChannelName,
+        language: source.language ?? null,
+        audioType: source.audioType ?? null,
+        region: source.region ?? null,
         embeddable: source.embeddable,
         availabilityStatus: source.availabilityStatus
       }))

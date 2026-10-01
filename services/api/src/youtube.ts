@@ -18,7 +18,7 @@ export interface YouTubeEpisode extends YouTubeVideo {
 }
 
 export function parseEpisodeNumber(title: string): number | null {
-  const match = title.match(/\bepisode\s*0*(\d{1,4})\b/i);
+  const match = title.match(/\bepisode\s*0*(\d{1,4})\b/i) ?? title.match(/#0*(\d{1,4})(?!\d)/);
   if (!match) return null;
   const value = Number(match[1]);
   return Number.isInteger(value) && value > 0 ? value : null;

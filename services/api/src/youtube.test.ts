@@ -8,6 +8,7 @@ const channelId = "UCC-g5hWSvCbdB8HQQIA0_pg";
 test("episode parser accepts numbered episodes and rejects trailers", () => {
   assert.equal(parseEpisodeNumber("【English Sub】Title｜Episode 01｜TROPICS"), 1);
   assert.equal(parseEpisodeNumber("Title - EPISODE 12"), 12);
+  assert.equal(parseEpisodeNumber("《殺手旅店》#7 (繁中字幕 | 日語原聲)【Ani-One Asia】"), 7);
   assert.equal(parseEpisodeNumber("Title｜PV01｜TROPICS"), null);
   assert.equal(parseEpisodeNumber("Official Trailer"), null);
 });
