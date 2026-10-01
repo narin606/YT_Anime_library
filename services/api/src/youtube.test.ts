@@ -26,6 +26,7 @@ test("approved playlist validation ignores videos without usable duration", () =
 test("approved playlist validation keeps public embeddable episodes from one channel", () => {
   const videos = [
     { id: "video01", title: "Title Episode 01", channelId, channelTitle: "Tropics Anime Asia", duration: "PT23M57S", embeddable: true, privacyStatus: "public", thumbnailUrl: "https://img.example/1.jpg", publishedAt: "2026-01-01T00:00:00Z" },
+    { id: "preview01", title: "Title - Preview of Episode 01", channelId, channelTitle: "Tropics Anime Asia", duration: "PT30S", embeddable: true, privacyStatus: "public", thumbnailUrl: null, publishedAt: null },
     { id: "trailer01", title: "Title PV01", channelId, channelTitle: "Tropics Anime Asia", duration: "PT1M", embeddable: true, privacyStatus: "public", thumbnailUrl: null, publishedAt: null },
     { id: "video02", title: "Title Episode 02", channelId, channelTitle: "Tropics Anime Asia", duration: "PT23M56S", embeddable: true, privacyStatus: "public", thumbnailUrl: null, publishedAt: null }
   ];

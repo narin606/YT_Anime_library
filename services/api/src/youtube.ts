@@ -33,6 +33,7 @@ export function parseIsoDurationSeconds(value: string): number {
 export function validatePlaylistEpisodes(videos: YouTubeVideo[], approvedChannelId: string): YouTubeEpisode[] {
   if (videos.some(video => video.channelId !== approvedChannelId)) throw new Error("Playlist contains a video from an unexpected channel");
   const episodes = videos.flatMap(video => {
+    if (/\b(previews?|trailers?|teasers?|promos?|promotional|pvs?)\b/i.test(video.title)) return [];
     const episodeNumber = parseEpisodeNumber(video.title);
     if (episodeNumber === null) return [];
     if (video.privacyStatus !== "public" || !video.embeddable) return [];
