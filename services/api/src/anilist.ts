@@ -1,26 +1,25 @@
 import { z } from "zod";
 
-const ANIME_SEARCH_QUERY = `
-  query AnimeSearch($search: String!, $page: Int!, $perPage: Int!) {
-    Page(page: $page, perPage: $perPage) {
-      pageInfo { currentPage hasNextPage }
-      media(search: $search, type: ANIME, sort: SEARCH_MATCH) {
-        id
-        title { english romaji native }
-        description(asHtml: false)
-        season
-        seasonYear
-        status
-        episodes
-        genres
-        studios(isMain: true) { nodes { name } }
-        coverImage { extraLarge large color }
-        bannerImage
-        siteUrl
-      }
-    }
-  }
+const MEDIA_FIELDS = `
+  id
+  title { english romaji native }
+  description(asHtml: false)
+  season
+  seasonYear
+  status
+  episodes
+  genres
+  studios(isMain: true) { nodes { name } }
+  coverImage { extraLarge large color }
+  bannerImage
+  siteUrl
 `;
+const ANIME_SEARCH_QUERY = `query AnimeSearch($search: String!, $page: Int!, $perPage: Int!) {
+  Page(page: $page, perPage: $perPage) { pageInfo { currentPage hasNextPage } media(search: $search, type: ANIME, sort: SEARCH_MATCH) { ${MEDIA_FIELDS} } }
+}`;
+const ANIME_BY_ID_QUERY = `query AnimeById($id: Int!) {
+  Page(page: 1, perPage: 1) { pageInfo { currentPage hasNextPage } media(id: $id, type: ANIME) { ${MEDIA_FIELDS} } }
+}`;
 
 const animeSchema = z.object({
   id: z.number().int().positive(),
@@ -83,6 +82,24 @@ export class AniListError extends Error {
   }
 }
 
+function normalizeAnime(anime: z.infer<typeof animeSchema>): AnimeSearchItem {
+  return {
+    anilistId: anime.id,
+    title: anime.title,
+    synopsis: anime.description,
+    season: anime.season,
+    seasonYear: anime.seasonYear,
+    status: anime.status,
+    episodeCount: anime.episodes,
+    genres: anime.genres,
+    studios: anime.studios.nodes.map((studio) => studio.name),
+    coverImageUrl: anime.coverImage.extraLarge ?? anime.coverImage.large,
+    coverColor: anime.coverImage.color,
+    bannerImageUrl: anime.bannerImage,
+    anilistUrl: anime.siteUrl
+  };
+}
+
 export async function searchAnime(
   apiUrl: string,
   search: string,
@@ -120,20 +137,25 @@ export async function searchAnime(
   const pageData = parsed.data.Page;
   return {
     pageInfo: pageData.pageInfo,
-    items: pageData.media.map((anime) => ({
-      anilistId: anime.id,
-      title: anime.title,
-      synopsis: anime.description,
-      season: anime.season,
-      seasonYear: anime.seasonYear,
-      status: anime.status,
-      episodeCount: anime.episodes,
-      genres: anime.genres,
-      studios: anime.studios.nodes.map((studio) => studio.name),
-      coverImageUrl: anime.coverImage.extraLarge ?? anime.coverImage.large,
-      coverColor: anime.coverImage.color,
-      bannerImageUrl: anime.bannerImage,
-      anilistUrl: anime.siteUrl
-    }))
+    items: pageData.media.map(normalizeAnime)
   };
+}
+
+export async function fetchAnimeById(apiUrl: string, id: number, fetcher: typeof fetch = fetch): Promise<AnimeSearchItem | null> {
+  let response: Response;
+  try {
+    response = await fetcher(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ query: ANIME_BY_ID_QUERY, variables: { id } }),
+      signal: AbortSignal.timeout(10_000)
+    });
+  } catch { throw new AniListError("AniList could not be reached. Try again shortly."); }
+  if (!response.ok) throw new AniListError(`AniList returned HTTP ${response.status}.`, response.status === 429 ? 503 : 502);
+  let parsed: z.infer<typeof responseSchema>;
+  try { parsed = responseSchema.parse(await response.json()); }
+  catch { throw new AniListError("AniList returned an unexpected response."); }
+  if (parsed.errors?.length || !parsed.data) throw new AniListError(parsed.errors?.[0]?.message ?? "AniList lookup failed.");
+  const anime = parsed.data.Page.media[0];
+  return anime ? normalizeAnime(anime) : null;
 }

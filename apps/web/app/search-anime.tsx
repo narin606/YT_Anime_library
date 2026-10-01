@@ -4,6 +4,7 @@ import { FormEvent, useRef, useState } from "react";
 
 import {
   episodeLabel,
+  importAnime,
   type AnimeSearchItem,
   searchAnime,
   validateSearchQuery
@@ -21,6 +22,7 @@ export function SearchAnime() {
   const [state, setState] = useState<"idle" | "loading" | "loadingMore" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const requestRef = useRef<AbortController | null>(null);
+  const [addingId, setAddingId] = useState<number | null>(null);
 
   async function runSearch(normalized: string, nextPage: number, append: boolean) {
     requestRef.current?.abort();
@@ -57,6 +59,19 @@ export function SearchAnime() {
       return;
     }
     await runSearch(normalized, 1, false);
+  }
+
+  async function addToLibrary(anime: AnimeSearchItem) {
+    setAddingId(anime.anilistId);
+    setMessage(`Adding ${titleFor(anime)} to the library…`);
+    try {
+      const stored = await importAnime(anime.anilistId);
+      window.location.assign(`/anime/${stored.id}`);
+    } catch (error) {
+      setState("error");
+      setMessage(error instanceof Error ? error.message : "Could not add this anime.");
+      setAddingId(null);
+    }
   }
 
   return (
@@ -96,7 +111,7 @@ export function SearchAnime() {
           <div className="resultGrid" aria-label="Anime search results">
             {items.map((anime) => (
               <article className="animeCard" key={anime.anilistId}>
-                <a href={anime.anilistUrl} target="_blank" rel="noreferrer" aria-label={`View ${titleFor(anime)} on AniList`}>
+                <button className="animeCardAction" type="button" disabled={addingId !== null} onClick={() => addToLibrary(anime)} aria-label={`Add ${titleFor(anime)} to the library`}>
                   <div className="cover" style={{ backgroundColor: anime.coverColor ?? "#202635" }}>
                     {anime.coverImageUrl && <img src={anime.coverImageUrl} alt="" />}
                     <span>{anime.status?.replaceAll("_", " ") ?? "ANIME"}</span>
@@ -110,7 +125,7 @@ export function SearchAnime() {
                     </p>
                     <div className="genres">{anime.genres.slice(0, 3).map((genre) => <span key={genre}>{genre}</span>)}</div>
                   </div>
-                </a>
+                </button>
               </article>
             ))}
           </div>

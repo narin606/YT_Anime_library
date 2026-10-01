@@ -22,6 +22,17 @@ export interface AnimeSearchResult {
   pageInfo: { currentPage: number; hasNextPage: boolean };
 }
 
+export interface CatalogueAnime extends Omit<AnimeSearchItem, "coverColor" | "anilistUrl"> {
+  id: string;
+  episodes: Array<{ id: string; seasonNumber: number; episodeNumber: number; title: string | null; durationSeconds: number | null }>;
+}
+
+function apiBaseUrl(override?: string) {
+  const value = override ?? process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (!value) throw new Error("The catalogue API is not configured.");
+  return value.replace(/\/$/, "");
+}
+
 export function validateSearchQuery(query: string): string | null {
   const length = query.trim().length;
   if (length < MIN_SEARCH_LENGTH) return "Enter at least two characters.";
@@ -35,8 +46,7 @@ export function episodeLabel(count: number | null): string | null {
 }
 
 export async function searchAnime(query: string, page = 1, signal?: AbortSignal): Promise<AnimeSearchResult> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
-  if (!baseUrl) throw new Error("The catalogue API is not configured.");
+  const baseUrl = apiBaseUrl();
 
   const params = new URLSearchParams({ q: query, page: String(page), perPage: "12" });
   const response = await fetch(`${baseUrl}/api/v1/search?${params}`, { signal });
@@ -51,4 +61,22 @@ export async function searchAnime(query: string, page = 1, signal?: AbortSignal)
     throw new Error("The catalogue returned invalid pagination data.");
   }
   return payload;
+}
+
+export async function importAnime(anilistId: number, fetcher: typeof fetch = fetch, baseUrl?: string): Promise<CatalogueAnime> {
+  const response = await fetcher(`${apiBaseUrl(baseUrl)}/api/v1/anime/import`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ anilistId })
+  });
+  const payload = await response.json().catch(() => null) as { anime?: CatalogueAnime; error?: { message?: string } } | null;
+  if (!response.ok || !payload?.anime) throw new Error(payload?.error?.message ?? "Could not add this anime.");
+  return payload.anime;
+}
+
+export async function getAnime(id: string): Promise<CatalogueAnime> {
+  const response = await fetch(`${apiBaseUrl()}/api/v1/anime/${encodeURIComponent(id)}`, { cache: "no-store" });
+  const payload = await response.json().catch(() => null) as { anime?: CatalogueAnime; error?: { message?: string } } | null;
+  if (!response.ok || !payload?.anime) throw new Error(payload?.error?.message ?? "Anime not found.");
+  return payload.anime;
 }

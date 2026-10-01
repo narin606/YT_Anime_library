@@ -8,7 +8,8 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { ZodError, z } from "zod";
 
-import { AniListError, searchAnime } from "./anilist.js";
+import { AniListError, fetchAnimeById, searchAnime } from "./anilist.js";
+import { animeCreateData, animeUpdateData, publicAnime } from "./catalog.js";
 import { loadConfig } from "./config.js";
 import { isMalformedJsonError } from "./requestErrors.js";
 
@@ -114,7 +115,27 @@ app.get("/api/v1/auth/me", async (req, res, next) => {
 app.get("/api/v1/anime", async (_req, res, next) => {
   try {
     const items = await prisma.anime.findMany({ orderBy: { updatedAt: "desc" }, take: 60 });
-    res.json({ items, nextCursor: null });
+    res.json({ items: items.map((item) => publicAnime(item)), nextCursor: null });
+  } catch (error) { next(error); }
+});
+
+const importAnimeSchema = z.object({ anilistId: z.number().int().positive() });
+app.post("/api/v1/anime/import", async (req, res, next) => {
+  try {
+    const { anilistId } = importAnimeSchema.parse(req.body);
+    const item = await fetchAnimeById(config.ANILIST_API_URL, anilistId);
+    if (!item) { res.status(404).json({ error: { code: "anime_not_found", message: "AniList anime not found." } }); return; }
+    const syncedAt = new Date();
+    const anime = await prisma.anime.upsert({ where: { anilistId }, create: animeCreateData(item, syncedAt), update: animeUpdateData(item, syncedAt) });
+    res.status(201).json({ anime: publicAnime(anime) });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/v1/anime/:id", async (req, res, next) => {
+  try {
+    const anime = await prisma.anime.findUnique({ where: { id: String(req.params.id) }, include: { episodes: { orderBy: [{ seasonNumber: "asc" }, { episodeNumber: "asc" }] } } });
+    if (!anime) { res.status(404).json({ error: { code: "anime_not_found", message: "Anime not found." } }); return; }
+    res.json({ anime: publicAnime(anime) });
   } catch (error) { next(error); }
 });
 

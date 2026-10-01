@@ -1,0 +1,72 @@
+import type { AnimeStatus } from "@prisma/client";
+
+import type { AnimeSearchItem } from "./anilist.js";
+
+const statuses = new Set<AnimeStatus>(["UNKNOWN", "RELEASING", "FINISHED", "NOT_YET_RELEASED", "CANCELLED", "HIATUS"]);
+
+export function animeCreateData(item: AnimeSearchItem, syncedAt = new Date()) {
+  return {
+    anilistId: item.anilistId,
+    titleEnglish: item.title.english,
+    titleRomaji: item.title.romaji,
+    titleNative: item.title.native,
+    synopsis: item.synopsis,
+    season: item.season,
+    seasonYear: item.seasonYear,
+    status: statuses.has(item.status as AnimeStatus) ? item.status as AnimeStatus : "UNKNOWN" as AnimeStatus,
+    episodeCount: item.episodeCount,
+    coverImageUrl: item.coverImageUrl,
+    bannerImageUrl: item.bannerImageUrl,
+    genres: [...item.genres],
+    studios: [...item.studios],
+    metadataSyncedAt: syncedAt
+  };
+}
+
+export const animeUpdateData = animeCreateData;
+
+type EpisodeRecord = {
+  id: string;
+  seasonNumber: number;
+  episodeNumber: number;
+  title: string | null;
+  durationSeconds: number | null;
+};
+
+type AnimeRecord = {
+  id: string;
+  anilistId: number | null;
+  titleEnglish: string | null;
+  titleRomaji: string;
+  titleNative: string | null;
+  synopsis: string | null;
+  season: string | null;
+  seasonYear: number | null;
+  status: AnimeStatus;
+  episodeCount: number | null;
+  coverImageUrl: string | null;
+  bannerImageUrl: string | null;
+  genres: string[];
+  studios: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  episodes?: EpisodeRecord[];
+};
+
+export function publicAnime(anime: AnimeRecord) {
+  return {
+    id: anime.id,
+    anilistId: anime.anilistId,
+    title: { english: anime.titleEnglish, romaji: anime.titleRomaji, native: anime.titleNative },
+    synopsis: anime.synopsis,
+    season: anime.season,
+    seasonYear: anime.seasonYear,
+    status: anime.status,
+    episodeCount: anime.episodeCount,
+    coverImageUrl: anime.coverImageUrl,
+    bannerImageUrl: anime.bannerImageUrl,
+    genres: anime.genres,
+    studios: anime.studios,
+    episodes: anime.episodes ?? []
+  };
+}

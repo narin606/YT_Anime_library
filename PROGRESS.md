@@ -1,14 +1,14 @@
 # Project Progress
 
-Last updated: 2026-09-27
+Last updated: 2026-10-01
 
 This file is the source of truth for the current project state. Read it before starting work and update it before ending a work session.
 
 ## Current phase
 
-**The catalogue foundation is running.**
+**The persisted catalogue and anime-details foundation is implemented.**
 
-The repository contains a responsive frontend, a validated AniList search API, the initial PostgreSQL migration, deployment configuration, and the product architecture. Title search now returns live, normalized anime metadata without requiring a YouTube API key.
+The repository contains a responsive frontend, validated AniList search and canonical-ID import APIs, persisted PostgreSQL catalogue records, anime detail pages with episode-ready empty states, deployment configuration, and the product architecture.
 
 ## Confirmed decisions
 
@@ -61,8 +61,8 @@ The repository contains a responsive frontend, a validated AniList search API, t
 - [ ] Add Tailwind CSS if retained
 - [x] Build anime card component
 - [ ] Build horizontal catalogue row
-- [ ] Build anime details page
-- [ ] Build episode list
+- [x] Build anime details page
+- [x] Build episode list and empty state
 - [ ] Build player page
 - [x] Add loading/empty/error states
 - [x] Connect frontend to backend search API
@@ -91,7 +91,7 @@ The repository contains a responsive frontend, a validated AniList search API, t
 
 - [x] Create validated AniList GraphQL client
 - [x] Search by anime title
-- [ ] Import canonical metadata into PostgreSQL
+- [x] Import canonical metadata into PostgreSQL
 - [x] Normalize AniList ID
 - [x] Normalize English/Romaji/native titles
 - [x] Normalize artwork
@@ -174,7 +174,7 @@ The repository contains a responsive frontend, a validated AniList search API, t
 
 1. YouTube API credentials have not been created/configured.
 2. Automated PostgreSQL backup storage and retention are not configured yet.
-3. Stored catalogue is still empty; live AniList search currently works separately from persisted catalogue data.
+3. Production rollout and live-browser verification of catalogue import/details are pending.
 
 ## QA findings from production smoke test
 
@@ -193,9 +193,18 @@ Open improvements:
 
 ## Recommended next work
 
-Persist selected AniList search results into PostgreSQL, expose them through `GET /api/v1/anime`, and build an anime details page from the stored catalogue. After that, add official YouTube source mapping and playback.
+Deploy and smoke-test persisted catalogue import/details, then add official YouTube source mapping and playback.
 
 ## Session log
+
+### 2026-10-01 - Persisted catalogue and anime details
+
+- Added idempotent AniList canonical-ID import into PostgreSQL and a stable public catalogue response shape.
+- Added stored-anime detail retrieval with episodes ordered by season and episode number.
+- Changed search cards to add a selected title to the library and open its detail page.
+- Added a responsive anime detail page with artwork, metadata, synopsis, studios, genres and an explicit no-mapped-episodes state.
+- Added catalogue mapping and frontend import-client regression tests. Five API tests and three web tests pass; both production builds pass.
+- Production deployment and live desktop/mobile browser verification remain pending.
 
 ### 2026-09-27 - QA fixes and extended production verification
 
