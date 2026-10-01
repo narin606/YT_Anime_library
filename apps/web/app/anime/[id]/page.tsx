@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { episodeLabel, getAnime } from "../../../lib/anime";
+import { EpisodePlayer } from "./episode-player";
 
 export default async function AnimeDetails({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,6 +18,6 @@ export default async function AnimeDetails({ params }: { params: Promise<{ id: s
       <div className="detailCover">{anime.coverImageUrl ? <img src={anime.coverImageUrl} alt={`${title} cover`} /> : <span>No cover</span>}</div>
       <div className="detailCopy"><span className="eyebrow">Stored catalogue</span><h1>{title}</h1><p className="detailMeta">{[anime.seasonYear, anime.season?.replaceAll("_", " "), episodeLabel(anime.episodeCount)].filter(Boolean).join(" · ")}</p><div className="genres">{anime.genres.map(genre => <span key={genre}>{genre}</span>)}</div><p className="synopsis">{anime.synopsis ?? "Synopsis is not available yet."}</p>{anime.studios.length > 0 && <p className="studioLine">Studio: {anime.studios.join(", ")}</p>}</div>
     </section>
-    <section className="episodeSection"><div className="sectionHeading"><div><span className="eyebrow">Official YouTube releases</span><h2>Episodes</h2></div><p>Official episodes will appear here when they are available to watch.</p></div>{anime.episodes.length ? <ol className="episodeList">{anime.episodes.map(episode => <li key={episode.id}><span>Episode {episode.episodeNumber}</span><strong>{episode.title ?? `Episode ${episode.episodeNumber}`}</strong></li>)}</ol> : <div className="episodeEmpty"><strong>No official episodes available yet</strong><p>This title is saved in the catalogue. Check back after official releases are added.</p></div>}</section>
+    <section className="episodeSection"><div className="sectionHeading"><div><span className="eyebrow">Official YouTube releases</span><h2>Episodes</h2></div><p>Choose an episode and watch the official upload without leaving the library.</p></div><EpisodePlayer episodes={anime.episodes} /></section>
   </main>;
 }

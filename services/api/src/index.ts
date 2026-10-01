@@ -12,6 +12,7 @@ import { AniListError, fetchAnimeById, searchAnime } from "./anilist.js";
 import { animeCreateData, animeUpdateData, publicAnime } from "./catalog.js";
 import { loadConfig } from "./config.js";
 import { isMalformedJsonError } from "./requestErrors.js";
+import { fetchApprovedPlaylist } from "./youtube.js";
 
 const config = loadConfig();
 const prisma = new PrismaClient();
@@ -133,9 +134,29 @@ app.post("/api/v1/anime/import", async (req, res, next) => {
 
 app.get("/api/v1/anime/:id", async (req, res, next) => {
   try {
-    const anime = await prisma.anime.findUnique({ where: { id: String(req.params.id) }, include: { episodes: { orderBy: [{ seasonNumber: "asc" }, { episodeNumber: "asc" }] } } });
+    const anime = await prisma.anime.findUnique({ where: { id: String(req.params.id) }, include: { episodes: { orderBy: [{ seasonNumber: "asc" }, { episodeNumber: "asc" }], include: { videoSources: { where: { availabilityStatus: "AVAILABLE", embeddable: true }, include: { provider: true } } } } } });
     if (!anime) { res.status(404).json({ error: { code: "anime_not_found", message: "Anime not found." } }); return; }
     res.json({ anime: publicAnime(anime) });
+  } catch (error) { next(error); }
+});
+
+const sourceImportSchema = z.object({ animeId: z.string().min(1), playlistId: z.string().regex(/^PL[A-Za-z0-9_-]+$/), channelId: z.string().regex(/^UC[A-Za-z0-9_-]+$/), channelName: z.string().trim().min(1).max(200) });
+app.post("/api/v1/admin/youtube/playlists/import", async (req, res, next) => {
+  try {
+    if (!config.ADMIN_API_KEY || req.get("authorization") !== `Bearer ${config.ADMIN_API_KEY}`) { res.status(401).json({ error: { code: "unauthorized", message: "Valid administrator credentials are required." } }); return; }
+    if (!config.YOUTUBE_API_KEY) { res.status(503).json({ error: { code: "youtube_not_configured", message: "YouTube ingestion is not configured." } }); return; }
+    const input = sourceImportSchema.parse(req.body);
+    if (!await prisma.anime.findUnique({ where: { id: input.animeId }, select: { id: true } })) { res.status(404).json({ error: { code: "anime_not_found", message: "Anime not found." } }); return; }
+    const playlist = await fetchApprovedPlaylist(config.YOUTUBE_API_KEY, input.playlistId, input.channelId);
+    const result = await prisma.$transaction(async tx => {
+      const provider = await tx.videoProvider.upsert({ where: { type_externalChannelId: { type: "YOUTUBE", externalChannelId: input.channelId } }, create: { type: "YOUTUBE", name: "YouTube", externalChannelId: input.channelId, externalChannelName: input.channelName }, update: { externalChannelName: input.channelName, enabled: true } });
+      for (const item of playlist.episodes) {
+        const episode = await tx.episode.upsert({ where: { animeId_seasonNumber_episodeNumber: { animeId: input.animeId, seasonNumber: 1, episodeNumber: item.episodeNumber } }, create: { animeId: input.animeId, seasonNumber: 1, episodeNumber: item.episodeNumber, title: `Episode ${item.episodeNumber}`, durationSeconds: item.durationSeconds }, update: { durationSeconds: item.durationSeconds } });
+        await tx.videoSource.upsert({ where: { externalVideoId: item.id }, create: { episodeId: episode.id, providerId: provider.id, externalVideoId: item.id, titleRaw: item.title, thumbnailUrl: item.thumbnailUrl, publishedAt: item.publishedAt ? new Date(item.publishedAt) : null, embeddable: true, availabilityStatus: "AVAILABLE", lastCheckedAt: new Date() }, update: { episodeId: episode.id, providerId: provider.id, titleRaw: item.title, thumbnailUrl: item.thumbnailUrl, publishedAt: item.publishedAt ? new Date(item.publishedAt) : null, embeddable: true, availabilityStatus: "AVAILABLE", lastCheckedAt: new Date() } });
+      }
+      return { episodeCount: playlist.episodes.length, providerId: provider.id };
+    });
+    res.json({ playlist: { id: input.playlistId, title: playlist.playlistTitle, channelId: input.channelId, channelName: input.channelName }, ...result });
   } catch (error) { next(error); }
 });
 

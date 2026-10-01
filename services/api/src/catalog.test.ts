@@ -65,6 +65,6 @@ test("public catalogue records expose stable detail-page fields", () => {
     bannerImageUrl: null,
     genres: ["Action", "Adventure"],
     studios: ["Toei Animation"],
-    episodes: [{ id: "episode_1", seasonNumber: 1, episodeNumber: 1, title: "Romance Dawn", durationSeconds: 1440 }]
+    episodes: [{ id: "episode_1", seasonNumber: 1, episodeNumber: 1, title: "Romance Dawn", durationSeconds: 1440, sources: [] }]
   });
 });

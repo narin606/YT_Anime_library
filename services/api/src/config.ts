@@ -7,6 +7,7 @@ const environmentSchema = z.object({
   FRONTEND_ORIGIN: z.string().url().default("http://localhost:3000"),
   ANILIST_API_URL: z.string().url().default("https://graphql.anilist.co"),
   ADMIN_API_KEY: z.string().min(24).optional(),
+  YOUTUBE_API_KEY: z.string().min(20).optional(),
   COOKIE_DOMAIN: z.string().optional()
 });
 

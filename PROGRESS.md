@@ -103,12 +103,12 @@ The repository contains a responsive frontend, validated AniList search and cano
 
 ## Phase 4 - YouTube catalogue
 
-- [ ] Create Google Cloud project/API key or reuse a suitable existing one
-- [ ] Enable YouTube Data API v3
-- [ ] Create official source/channel registry
-- [ ] Ingest uploads/playlists
-- [ ] Store video/provider metadata
-- [ ] Extract candidate anime title and episode number
+- [x] Reuse the secured YouTube Data API v3 key
+- [x] Validate YouTube Data API v3 access
+- [x] Create approved official source/channel ingestion
+- [x] Ingest approved playlists
+- [x] Store video/provider metadata
+- [x] Extract episode numbers from approved playlist titles
 - [ ] Build anime matching workflow
 - [ ] Add confidence scoring
 - [ ] Add manual review queue
@@ -196,6 +196,14 @@ Open improvements:
 Deploy and smoke-test persisted catalogue import/details, then add official YouTube source mapping and playback.
 
 ## Session log
+
+### 2026-10-01 - Official YouTube episode ingestion and playback
+
+- Added server-side YouTube Data API playlist ingestion behind administrator authentication; credentials remain only in the mode-600 production environment.
+- Approved playlists are checked for channel ownership, public status, embeddability, unique episode numbers and valid durations before an idempotent transaction persists providers, episodes and video sources.
+- Added official YouTube privacy-enhanced playback and responsive episode cards to anime detail pages.
+- Verified the Tropics Anime Asia English-subtitled playlist for *Jack-of-All-Trades, Party of None*: 12 numbered episodes plus two promotional videos; only Episodes 1–12 are ingested.
+- Nine API tests and three web tests pass; both production builds pass. Production ingestion and browser verification are in progress.
 
 ### 2026-10-01 - Persisted catalogue and anime details
 

@@ -35,6 +35,7 @@ type EpisodeRecord = {
   episodeNumber: number;
   title: string | null;
   durationSeconds: number | null;
+  videoSources?: Array<{ externalVideoId: string; thumbnailUrl: string | null; embeddable: boolean | null; availabilityStatus: string; provider: { externalChannelName: string | null } }>;
 };
 
 type AnimeRecord = {
@@ -71,6 +72,20 @@ export function publicAnime(anime: AnimeRecord) {
     bannerImageUrl: anime.bannerImageUrl,
     genres: anime.genres,
     studios: anime.studios,
-    episodes: anime.episodes ?? []
+    episodes: (anime.episodes ?? []).map(episode => ({
+      id: episode.id,
+      seasonNumber: episode.seasonNumber,
+      episodeNumber: episode.episodeNumber,
+      title: episode.title,
+      durationSeconds: episode.durationSeconds,
+      sources: (episode.videoSources ?? []).map(source => ({
+        provider: "YOUTUBE",
+        videoId: source.externalVideoId,
+        thumbnailUrl: source.thumbnailUrl,
+        channelName: source.provider.externalChannelName,
+        embeddable: source.embeddable,
+        availabilityStatus: source.availabilityStatus
+      }))
+    }))
   };
 }
