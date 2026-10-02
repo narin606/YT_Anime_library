@@ -1,6 +1,7 @@
 export interface ViewerAccount {
   id: string;
   email: string;
+  isAdmin: boolean;
   profiles: Array<{ id: string; name: string; avatar: string | null }>;
 }
 

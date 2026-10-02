@@ -8,6 +8,14 @@ This file is the source of truth for the current project state. Read it before s
 
 **Distributor-backed catalogue ingestion now supports reviewed AniList mappings and multiple official language/audio/region source variants per anime.**
 
+### 2026-10-02 — administrator catalogue console
+
+- Added a database-backed `isAdmin` role and session-protected admin preview/publish endpoints; administrator credentials and API keys remain server-side.
+- Added `/admin` with playlist URL, AniList URL/ID, language, audio type, region, and expected episode count fields.
+- Preview validates approved-channel ownership, retrieves all public playlist items, excludes promotional entries, verifies episode numbering, and blocks publishing on AniList/expected-count mismatches.
+- Combined-season and duplicate-number playlists remain blocked for manual segmentation instead of being published incorrectly.
+- `admin@kaehana.com` was requested as the administrator identity but does not yet exist; role assignment remains disabled until that account is registered normally.
+
 ### 2026-10-02 — preview-safe Muse playlist import
 
 - Linked Muse Asia playlist `PLwLSw1_eDZl1AUEELCJe2ghK9eDI5nGsQ` to AniList `148465` with exactly 12 full English-sub episodes.

@@ -17,7 +17,8 @@ export default function LoginPage() {
     setBusy(true); setError("");
     try {
       await login({ email: String(data.get("email")), password: String(data.get("password")) });
-      router.push("/"); router.refresh();
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.push(next?.startsWith("/") ? next : "/"); router.refresh();
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Sign in failed.");
     } finally { setBusy(false); }
