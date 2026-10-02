@@ -8,6 +8,12 @@ This file is the source of truth for the current project state. Read it before s
 
 **Distributor-backed catalogue ingestion now supports reviewed AniList mappings and multiple official language/audio/region source variants per anime.**
 
+### 2026-10-02 — server-protected Catalogue Manager
+
+- Replaced the client-only management-page check with server-side session and role authorization before any private form HTML is rendered.
+- Renamed the owner interface from Admin/Catalogue console to Catalogue Manager at `/manage`; legacy `/admin` redirects there.
+- The protected page displays the authenticated email and an explicit sign-out control.
+
 ### 2026-10-02 — controlled catalogue backfill
 
 - Fixed a cross-language false-positive bug where non-Latin titles could both normalize to an empty string and be treated as exact matches; added regression coverage.
