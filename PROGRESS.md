@@ -8,6 +8,14 @@ This file is the source of truth for the current project state. Read it before s
 
 **Distributor-backed catalogue ingestion now supports reviewed AniList mappings and multiple official language/audio/region source variants per anime.**
 
+### 2026-10-02 — controlled catalogue backfill
+
+- Fixed a cross-language false-positive bug where non-Latin titles could both normalize to an empty string and be treated as exact matches; added regression coverage.
+- Rolled back the affected five-playlist trial completely before redeploying the matcher fix.
+- Reprocessed conservatively: 12 net new watchable anime were published from exact, contiguous, approved-source matches; AniList throttling stopped further work safely.
+- Production now has 43 watchable anime, 695 untouched likely-series playlists, and 275 processed review/unmatched playlists.
+- Live homepage QA rendered 114 cards across five discovery rows; a new 12-episode page passed mobile playback-layout QA without horizontal overflow.
+
 ### 2026-10-02 — account security hardening
 
 - New registrations require one-hour email verification through Resend; existing accounts were migrated as verified.
