@@ -1,2 +1,2 @@
-import { redirect } from "next/navigation";
-export default function LegacyAdminRoute(){redirect("/manage")}
+import { notFound } from "next/navigation";
+export default function RemovedAdminRoute(){notFound()}
