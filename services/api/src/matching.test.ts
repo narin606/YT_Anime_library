@@ -8,6 +8,11 @@ test("extracts distributor playlist search titles",()=>{
  assert.equal(playlistSearchTitle("Frieren: Beyond Journey's End [English Sub]"),"Frieren: Beyond Journey's End");
  assert.equal(playlistSearchTitle("《My Teen Romantic Comedy SNAFU》|《果然我的青春戀愛喜劇搞錯了。》"),"My Teen Romantic Comedy SNAFU");
 });
+test("never treats non-Latin titles as equal through empty normalization",()=>{
+ const anime={title:{english:"Perfect Addiction",romaji:"Perfect Addiction",native:"澈底對你成癮"},episodeCount:12};
+ assert.equal(matchPlaylistToAnime("恋爱与谎言 [中字]",12,anime).publishable,false);
+});
+
 test("accepts exact title matches and rejects loose or episode-count conflicts",()=>{
  assert.ok(matchPlaylistToAnime("Frieren: Beyond Journey's End [English Sub]",35,anime).confidence>=0.9);
  assert.equal(matchPlaylistToAnime("Frieren Funny Moments",28,anime).publishable,false);

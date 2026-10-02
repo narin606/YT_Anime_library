@@ -5,7 +5,7 @@ export function playlistSearchTitle(title:string){
 }
 export function matchPlaylistToAnime(playlistTitle:string,itemCount:number,anime:{title:{english:string|null;romaji:string;native:string|null};episodeCount:number|null}){
  const extracted=normalizeTitle(playlistSearchTitle(playlistTitle));const titles=[anime.title.english,anime.title.romaji,anime.title.native].filter(Boolean).map(x=>normalizeTitle(x!));
- const exact=titles.includes(extracted);const countOkay=itemCount>=4&&(!anime.episodeCount||itemCount>=Math.min(4,anime.episodeCount)&&itemCount<=anime.episodeCount+10);
+ const exact=extracted.length>0&&titles.some(title=>title.length>0&&title===extracted);const countOkay=itemCount>=4&&(!anime.episodeCount||itemCount>=Math.min(4,anime.episodeCount)&&itemCount<=anime.episodeCount+10);
  const banned=/\b(trailer|pv|clip|recap|compilation|funny moments|opening|ending)\b/i.test(playlistTitle);
  const confidence=exact&&!banned?(countOkay?0.96:0.75):0;
  return {confidence,publishable:confidence>=0.9,extractedTitle:playlistSearchTitle(playlistTitle),reason:exact?(countOkay?"Exact title and plausible item count":"Exact title but implausible item count"):"Title did not match exactly"};
