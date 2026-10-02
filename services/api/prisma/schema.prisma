@@ -234,11 +234,36 @@ model Account {
   email              String   @unique
   passwordHash       String
   isAdmin            Boolean  @default(false)
+  emailVerifiedAt    DateTime?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
   profiles Profile[]
   sessions Session[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model EmailVerificationToken {
+  id String @id @default(cuid())
+  accountId String
+  tokenHash String @unique
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  @@index([accountId])
+}
+
+model PasswordResetToken {
+  id String @id @default(cuid())
+  accountId String
+  tokenHash String @unique
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  @@index([accountId])
 }
 
 model Session {
@@ -247,6 +272,9 @@ model Session {
   accountId String
   expiresAt DateTime
   createdAt DateTime @default(now())
+  revokedAt DateTime?
+  userAgent String?
+  ipAddress String?
 
   account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
 

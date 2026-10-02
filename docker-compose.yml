@@ -27,6 +27,8 @@ services:
       ADMIN_API_KEY: ${ADMIN_API_KEY}
       ANILIST_API_URL: https://graphql.anilist.co
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-}
     depends_on:
       postgres:
         condition: service_healthy

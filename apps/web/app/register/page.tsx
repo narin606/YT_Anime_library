@@ -17,7 +17,7 @@ export default function RegisterPage() {
     setBusy(true); setError("");
     try {
       await register({ name: String(data.get("name")), email: String(data.get("email")), password: String(data.get("password")) });
-      router.push("/"); router.refresh();
+      router.push("/login?verified=pending"); router.refresh();
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Registration failed.");
     } finally { setBusy(false); }

@@ -1,0 +1,11 @@
+ALTER TABLE "Account" ADD COLUMN "emailVerifiedAt" TIMESTAMP(3);
+UPDATE "Account" SET "emailVerifiedAt" = COALESCE("createdAt", CURRENT_TIMESTAMP);
+ALTER TABLE "Session" ADD COLUMN "revokedAt" TIMESTAMP(3), ADD COLUMN "userAgent" TEXT, ADD COLUMN "ipAddress" TEXT;
+CREATE TABLE "EmailVerificationToken" ("id" TEXT NOT NULL,"accountId" TEXT NOT NULL,"tokenHash" TEXT NOT NULL,"expiresAt" TIMESTAMP(3) NOT NULL,"consumedAt" TIMESTAMP(3),"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "EmailVerificationToken_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "EmailVerificationToken_tokenHash_key" ON "EmailVerificationToken"("tokenHash");
+CREATE INDEX "EmailVerificationToken_accountId_idx" ON "EmailVerificationToken"("accountId");
+ALTER TABLE "EmailVerificationToken" ADD CONSTRAINT "EmailVerificationToken_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "Account"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE TABLE "PasswordResetToken" ("id" TEXT NOT NULL,"accountId" TEXT NOT NULL,"tokenHash" TEXT NOT NULL,"expiresAt" TIMESTAMP(3) NOT NULL,"consumedAt" TIMESTAMP(3),"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "PasswordResetToken_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "PasswordResetToken_tokenHash_key" ON "PasswordResetToken"("tokenHash");
+CREATE INDEX "PasswordResetToken_accountId_idx" ON "PasswordResetToken"("accountId");
+ALTER TABLE "PasswordResetToken" ADD CONSTRAINT "PasswordResetToken_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "Account"("id") ON DELETE CASCADE ON UPDATE CASCADE;

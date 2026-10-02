@@ -15,12 +15,15 @@ import { syncTrustedChannel, TRUSTED_CHANNELS } from "./channels.js";
 import { loadConfig } from "./config.js";
 import { isMalformedJsonError } from "./requestErrors.js";
 import { ingestSegmentedPlaylist } from "./segments.js";
+import { resendDelivery } from "./email.js";
+import { createOpaqueToken, hashOpaqueToken, RESET_TTL_MS, validCsrf, VERIFICATION_TTL_MS } from "./security.js";
 import { fetchApprovedPlaylist } from "./youtube.js";
 
 const config = loadConfig();
 const prisma = new PrismaClient();
 const app = express();
 const sessionCookie = "yt_anime_session";
+const csrfCookie = "yt_anime_csrf";
 const sessionLifetimeMs = 30 * 24 * 60 * 60 * 1000;
 
 app.set("trust proxy", 1);
@@ -29,6 +32,8 @@ app.use(helmet());
 app.use(cors({ origin: config.FRONTEND_ORIGIN, credentials: true }));
 app.use(express.json({ limit: "64kb" }));
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: "draft-8", legacyHeaders: false });
+const recoveryLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: "draft-8", legacyHeaders: false });
+const emailDelivery=config.RESEND_API_KEY&&config.RESEND_FROM?resendDelivery({apiKey:config.RESEND_API_KEY,from:config.RESEND_FROM,frontendUrl:config.FRONTEND_ORIGIN}):null;
 
 function parseCookies(header: string | undefined) {
   return Object.fromEntries((header ?? "").split(";").map((part) => part.trim().split("=")).filter(([key, value]) => key && value).map(([key, value]) => [key, decodeURIComponent(value)]));
@@ -44,17 +49,18 @@ async function currentAccount(req: express.Request) {
   const token = parseCookies(req.headers.cookie)[sessionCookie];
   if (!token) return null;
   const session = await prisma.session.findUnique({ where: { tokenHash: tokenHash(token) }, include: { account: { include: { profiles: { orderBy: { createdAt: "asc" } } } } } });
-  if (!session || session.expiresAt <= new Date()) {
+  if (!session || session.revokedAt || session.expiresAt <= new Date()) {
     if (session) await prisma.session.delete({ where: { id: session.id } }).catch(() => undefined);
     return null;
   }
   return session.account;
 }
-async function createSession(res: express.Response, accountId: string) {
-  const token = randomBytes(32).toString("base64url");
+async function createSession(req: express.Request,res: express.Response, accountId: string) {
+  const token = randomBytes(32).toString("base64url"),csrf=createOpaqueToken();
   const expiresAt = new Date(Date.now() + sessionLifetimeMs);
-  await prisma.session.create({ data: { tokenHash: tokenHash(token), accountId, expiresAt } });
+  await prisma.$transaction(async tx=>{const old=parseCookies(req.headers.cookie)[sessionCookie];if(old)await tx.session.updateMany({where:{tokenHash:tokenHash(old),revokedAt:null},data:{revokedAt:new Date()}});await tx.session.create({ data: { tokenHash: tokenHash(token), accountId, expiresAt,userAgent:req.get("user-agent")?.slice(0,500),ipAddress:req.ip } });});
   res.cookie(sessionCookie, token, { ...cookieOptions(), expires: expiresAt });
+  res.cookie(csrfCookie,csrf,{secure:config.NODE_ENV==="production",sameSite:"lax",domain:config.COOKIE_DOMAIN||undefined,path:"/",expires:expiresAt});
 }
 async function requireAdmin(req: express.Request, res: express.Response) {
   const account = await currentAccount(req);
@@ -94,8 +100,11 @@ app.post("/api/v1/auth/register", authLimiter, async (req, res, next) => {
       data: { authProviderUserId: randomUUID(), email: input.email, passwordHash: await hash(input.password, 12), profiles: { create: { name: input.name } } },
       include: { profiles: true }
     });
-    await createSession(res, account.id);
-    res.status(201).json({ account: publicAccount(account) });
+    if (!emailDelivery) { await prisma.account.delete({where:{id:account.id}}); res.status(503).json({error:{code:"email_not_configured",message:"Email verification is temporarily unavailable."}}); return; }
+    const verificationToken=createOpaqueToken();
+    await prisma.emailVerificationToken.create({data:{accountId:account.id,tokenHash:hashOpaqueToken(verificationToken),expiresAt:new Date(Date.now()+VERIFICATION_TTL_MS)}});
+    try { await emailDelivery.sendVerification(account.email,verificationToken); } catch { await prisma.account.delete({where:{id:account.id}}); res.status(503).json({error:{code:"email_delivery_failed",message:"Unable to send verification email. Please try again later."}}); return; }
+    res.status(202).json({ message:"Check your inbox to verify your email." });
   } catch (error) { next(error); }
 });
 
@@ -107,17 +116,22 @@ app.post("/api/v1/auth/login", authLimiter, async (req, res, next) => {
       res.status(401).json({ error: { code: "invalid_credentials", message: "Email or password is incorrect." } });
       return;
     }
-    await createSession(res, account.id);
+    if (!account.emailVerifiedAt) { res.status(403).json({error:{code:"email_unverified",message:"Verify your email before signing in."}}); return; }
+    await createSession(req,res, account.id);
     res.json({ account: publicAccount(account) });
   } catch (error) { next(error); }
 });
 
+function requireCsrf(req:express.Request,res:express.Response){const cookies=parseCookies(req.headers.cookie);if(!validCsrf(req.get("origin"),config.FRONTEND_ORIGIN,cookies[csrfCookie],req.get("x-csrf-token"))){res.status(403).json({error:{code:"csrf_invalid",message:"Security token is invalid. Refresh and try again."}});return false}return true}
 app.post("/api/v1/auth/logout", async (req, res) => {
-  const token = parseCookies(req.headers.cookie)[sessionCookie];
-  if (token) await prisma.session.deleteMany({ where: { tokenHash: tokenHash(token) } });
-  res.clearCookie(sessionCookie, cookieOptions());
+  if(!requireCsrf(req,res))return;const token = parseCookies(req.headers.cookie)[sessionCookie];
+  if (token) await prisma.session.updateMany({ where: { tokenHash: tokenHash(token),revokedAt:null },data:{revokedAt:new Date()} });
+  res.clearCookie(sessionCookie, cookieOptions());res.clearCookie(csrfCookie,{...cookieOptions(),httpOnly:false});
   res.status(204).end();
 });
+app.post("/api/v1/auth/verify-email",recoveryLimiter,async(req,res,next)=>{try{const {token}=z.object({token:z.string().min(1).max(512)}).parse(req.body),now=new Date();const row=await prisma.emailVerificationToken.findFirst({where:{tokenHash:hashOpaqueToken(token),consumedAt:null,expiresAt:{gt:now}}});if(!row){res.status(400).json({error:{code:"invalid_token",message:"Invalid or expired verification link."}});return;}await prisma.$transaction([prisma.emailVerificationToken.update({where:{id:row.id},data:{consumedAt:now}}),prisma.account.update({where:{id:row.accountId},data:{emailVerifiedAt:now}})]);res.json({message:"Email verified. You can now sign in."});}catch(error){next(error)}});
+app.post("/api/v1/auth/forgot-password",recoveryLimiter,async(req,res,next)=>{try{const {email}=z.object({email:z.string().trim().toLowerCase().email()}).parse(req.body),account=await prisma.account.findUnique({where:{email}});if(account?.emailVerifiedAt&&emailDelivery){const raw=createOpaqueToken();await prisma.passwordResetToken.deleteMany({where:{accountId:account.id,consumedAt:null}});await prisma.passwordResetToken.create({data:{accountId:account.id,tokenHash:hashOpaqueToken(raw),expiresAt:new Date(Date.now()+RESET_TTL_MS)}});try{await emailDelivery.sendPasswordReset(account.email,raw)}catch{await prisma.passwordResetToken.deleteMany({where:{accountId:account.id,tokenHash:hashOpaqueToken(raw)}});throw new Error("email_delivery_failed")}}res.status(202).json({message:"If an eligible account exists, password reset instructions will be sent."});}catch(error){next(error)}});
+app.post("/api/v1/auth/reset-password",recoveryLimiter,async(req,res,next)=>{try{const {token,password}=z.object({token:z.string().min(1).max(512),password:z.string().min(12).max(128)}).parse(req.body),now=new Date();const row=await prisma.passwordResetToken.findFirst({where:{tokenHash:hashOpaqueToken(token),consumedAt:null,expiresAt:{gt:now}}});if(!row){res.status(400).json({error:{code:"invalid_token",message:"Invalid or expired password reset link."}});return;}await prisma.$transaction(async tx=>{const consumed=await tx.passwordResetToken.updateMany({where:{id:row.id,consumedAt:null,expiresAt:{gt:now}},data:{consumedAt:now}});if(consumed.count!==1)throw new Error("reset_consumed");await tx.account.update({where:{id:row.accountId},data:{passwordHash:await hash(password,12)}});await tx.session.updateMany({where:{accountId:row.accountId,revokedAt:null},data:{revokedAt:now}})});res.json({message:"Password reset. You can now sign in."});}catch(error){next(error)}});
 
 app.get("/api/v1/auth/me", async (req, res, next) => {
   try {
@@ -141,8 +155,12 @@ async function inspectAdminPlaylist(input:z.infer<typeof adminPlaylistSchema>){
   const warnings:string[]=[];if(input.expectedEpisodes&&source.episodes.length!==input.expectedEpisodes)warnings.push(`Expected ${input.expectedEpisodes} episodes but validated ${source.episodes.length}.`);if(anime.episodeCount&&source.episodes.length!==anime.episodeCount)warnings.push(`AniList lists ${anime.episodeCount} episodes but the playlist has ${source.episodes.length} validated episodes.`);
   return {playlistId,discovered,anime,source,warnings} as const;
 }
-app.post("/api/v1/admin/console/preview",async(req,res,next)=>{try{if(!await requireAdmin(req,res))return;if(!config.YOUTUBE_API_KEY){res.status(503).json({error:{code:"youtube_not_configured",message:"YouTube ingestion is not configured."}});return;}const input=adminPlaylistSchema.parse(req.body),result=await inspectAdminPlaylist(input);if("error" in result){res.status(400).json(result);return;}res.json({preview:{playlistId:result.playlistId,playlistTitle:result.source.playlistTitle,channelName:result.discovered.approvedChannel.name,anime:{anilistId:result.anime.anilistId,title:result.anime.title,episodeCount:result.anime.episodeCount,coverImageUrl:result.anime.coverImageUrl},validatedEpisodes:result.source.episodes.length,firstEpisode:result.source.episodes[0]?.episodeNumber??null,lastEpisode:result.source.episodes.at(-1)?.episodeNumber??null,warnings:result.warnings}});}catch(error){next(error);}});
-app.post("/api/v1/admin/console/publish",async(req,res,next)=>{try{if(!await requireAdmin(req,res))return;if(!config.YOUTUBE_API_KEY){res.status(503).json({error:{code:"youtube_not_configured",message:"YouTube ingestion is not configured."}});return;}const input=adminPlaylistSchema.parse(req.body),result=await inspectAdminPlaylist(input);if("error" in result){res.status(400).json(result);return;}if(result.warnings.length){res.status(409).json({error:{code:"confirmation_mismatch",message:"Resolve episode-count warnings before publishing.",details:result.warnings}});return;}const syncedAt=new Date(),anime=await prisma.anime.upsert({where:{anilistId:result.anime.anilistId},create:animeCreateData(result.anime,syncedAt),update:animeUpdateData(result.anime,syncedAt)});const provider=await prisma.videoProvider.upsert({where:{type_externalChannelId:{type:"YOUTUBE",externalChannelId:result.discovered.approvedChannel.externalChannelId}},create:{type:"YOUTUBE",name:"YouTube",externalChannelId:result.discovered.approvedChannel.externalChannelId,externalChannelName:result.discovered.approvedChannel.name},update:{externalChannelName:result.discovered.approvedChannel.name,enabled:true}});await prisma.$transaction(async tx=>{for(const item of result.source.episodes){const episode=await tx.episode.upsert({where:{animeId_seasonNumber_episodeNumber:{animeId:anime.id,seasonNumber:1,episodeNumber:item.episodeNumber}},create:{animeId:anime.id,seasonNumber:1,episodeNumber:item.episodeNumber,title:`Episode ${item.episodeNumber}`,durationSeconds:item.durationSeconds},update:{durationSeconds:item.durationSeconds}});await tx.videoSource.upsert({where:{externalVideoId:item.id},create:{episodeId:episode.id,providerId:provider.id,discoveredPlaylistId:result.discovered.id,externalVideoId:item.id,titleRaw:item.title,thumbnailUrl:item.thumbnailUrl,publishedAt:item.publishedAt?new Date(item.publishedAt):null,language:input.language,audioType:input.audioType,region:input.region,embeddable:true,availabilityStatus:"AVAILABLE",lastCheckedAt:new Date()},update:{episodeId:episode.id,providerId:provider.id,discoveredPlaylistId:result.discovered.id,language:input.language,audioType:input.audioType,region:input.region,embeddable:true,availabilityStatus:"AVAILABLE",lastCheckedAt:new Date()}});}await tx.discoveredPlaylist.update({where:{id:result.discovered.id},data:{animeId:anime.id,language:input.language,audioType:input.audioType,region:input.region,matchConfidence:1,matchReason:"Published through administrator catalogue console"}});},{timeout:120000});res.json({animeId:anime.id,episodeCount:result.source.episodes.length});}catch(error){next(error);}});
+app.post("/api/v1/admin/console/preview",async(req,res,next)=>{try{if(!await requireAdmin(req,res))return;if(!requireCsrf(req,res))return;if(!config.YOUTUBE_API_KEY){res.status(503).json({error:{code:"youtube_not_configured",message:"YouTube ingestion is not configured."}});return;}const input=adminPlaylistSchema.parse(req.body),result=await inspectAdminPlaylist(input);if("error" in result){res.status(400).json(result);return;}res.json({preview:{playlistId:result.playlistId,playlistTitle:result.source.playlistTitle,channelName:result.discovered.approvedChannel.name,anime:{anilistId:result.anime.anilistId,title:result.anime.title,episodeCount:result.anime.episodeCount,coverImageUrl:result.anime.coverImageUrl},validatedEpisodes:result.source.episodes.length,firstEpisode:result.source.episodes[0]?.episodeNumber??null,lastEpisode:result.source.episodes.at(-1)?.episodeNumber??null,warnings:result.warnings}});}catch(error){next(error);}});
+app.post("/api/v1/admin/console/publish",async(req,res,next)=>{try{if(!await requireAdmin(req,res))return;if(!requireCsrf(req,res))return;if(!config.YOUTUBE_API_KEY){res.status(503).json({error:{code:"youtube_not_configured",message:"YouTube ingestion is not configured."}});return;}const input=adminPlaylistSchema.parse(req.body),result=await inspectAdminPlaylist(input);if("error" in result){res.status(400).json(result);return;}if(result.warnings.length){res.status(409).json({error:{code:"confirmation_mismatch",message:"Resolve episode-count warnings before publishing.",details:result.warnings}});return;}const syncedAt=new Date(),anime=await prisma.anime.upsert({where:{anilistId:result.anime.anilistId},create:animeCreateData(result.anime,syncedAt),update:animeUpdateData(result.anime,syncedAt)});const provider=await prisma.videoProvider.upsert({where:{type_externalChannelId:{type:"YOUTUBE",externalChannelId:result.discovered.approvedChannel.externalChannelId}},create:{type:"YOUTUBE",name:"YouTube",externalChannelId:result.discovered.approvedChannel.externalChannelId,externalChannelName:result.discovered.approvedChannel.name},update:{externalChannelName:result.discovered.approvedChannel.name,enabled:true}});await prisma.$transaction(async tx=>{for(const item of result.source.episodes){const episode=await tx.episode.upsert({where:{animeId_seasonNumber_episodeNumber:{animeId:anime.id,seasonNumber:1,episodeNumber:item.episodeNumber}},create:{animeId:anime.id,seasonNumber:1,episodeNumber:item.episodeNumber,title:`Episode ${item.episodeNumber}`,durationSeconds:item.durationSeconds},update:{durationSeconds:item.durationSeconds}});await tx.videoSource.upsert({where:{externalVideoId:item.id},create:{episodeId:episode.id,providerId:provider.id,discoveredPlaylistId:result.discovered.id,externalVideoId:item.id,titleRaw:item.title,thumbnailUrl:item.thumbnailUrl,publishedAt:item.publishedAt?new Date(item.publishedAt):null,language:input.language,audioType:input.audioType,region:input.region,embeddable:true,availabilityStatus:"AVAILABLE",lastCheckedAt:new Date()},update:{episodeId:episode.id,providerId:provider.id,discoveredPlaylistId:result.discovered.id,language:input.language,audioType:input.audioType,region:input.region,embeddable:true,availabilityStatus:"AVAILABLE",lastCheckedAt:new Date()}});}await tx.discoveredPlaylist.update({where:{id:result.discovered.id},data:{animeId:anime.id,language:input.language,audioType:input.audioType,region:input.region,matchConfidence:1,matchReason:"Published through administrator catalogue console"}});},{timeout:120000});res.json({animeId:anime.id,episodeCount:result.source.episodes.length});}catch(error){next(error);}});
+
+app.get("/api/v1/auth/sessions",async(req,res,next)=>{try{const account=await currentAccount(req);if(!account){res.status(401).json({error:{code:"unauthenticated",message:"Sign in to continue."}});return;}const current=tokenHash(parseCookies(req.headers.cookie)[sessionCookie]);const sessions=await prisma.session.findMany({where:{accountId:account.id,revokedAt:null,expiresAt:{gt:new Date()}},orderBy:{createdAt:"desc"}});res.json({sessions:sessions.map(s=>({id:s.id,current:s.tokenHash===current,createdAt:s.createdAt,expiresAt:s.expiresAt,userAgent:s.userAgent}))});}catch(error){next(error)}});
+app.delete("/api/v1/auth/sessions/:id",async(req,res,next)=>{try{if(!requireCsrf(req,res))return;const account=await currentAccount(req);if(!account){res.status(401).json({error:{code:"unauthenticated",message:"Sign in to continue."}});return;}await prisma.session.updateMany({where:{id:String(req.params.id),accountId:account.id,revokedAt:null},data:{revokedAt:new Date()}});res.status(204).end();}catch(error){next(error)}});
+app.delete("/api/v1/admin/console/anime/:id",async(req,res,next)=>{try{if(!await requireAdmin(req,res))return;if(!requireCsrf(req,res))return;const id=String(req.params.id),anime=await prisma.anime.findUnique({where:{id},select:{id:true}});if(!anime){res.status(404).json({error:{code:"anime_not_found",message:"Anime not found."}});return;}await prisma.$transaction(async tx=>{await tx.discoveredPlaylist.updateMany({where:{animeId:id},data:{animeId:null,matchConfidence:null,matchReason:"Removed through administrator console; requires remapping"}});await tx.anime.delete({where:{id}})});res.status(204).end();}catch(error){next(error)}});
 
 app.get("/api/v1/anime", async (_req, res, next) => {
   try {

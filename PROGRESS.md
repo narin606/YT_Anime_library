@@ -8,6 +8,14 @@ This file is the source of truth for the current project state. Read it before s
 
 **Distributor-backed catalogue ingestion now supports reviewed AniList mappings and multiple official language/audio/region source variants per anime.**
 
+### 2026-10-02 — account security hardening
+
+- New registrations require one-hour email verification through Resend; existing accounts were migrated as verified.
+- Added generic, non-enumerating password reset with 15-minute hashed tokens and full session revocation after reset.
+- Added origin-bound double-submit CSRF protection for authenticated mutations and administrator operations.
+- Sessions now retain revocation state and limited device metadata, with APIs for listing and revoking active sessions.
+- Admin catalogue deletion requires confirmation and preserves playlist inventory for later remapping.
+
 ### 2026-10-02 — administrator catalogue console
 
 - Added a database-backed `isAdmin` role and session-protected admin preview/publish endpoints; administrator credentials and API keys remain server-side.

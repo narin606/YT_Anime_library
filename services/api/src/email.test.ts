@@ -1,0 +1,4 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { resendDelivery } from "./email.js";
+test("Resend delivery builds verification and reset links",async()=>{const requests:Array<{url:string;init:RequestInit}>=[];const delivery=resendDelivery({apiKey:"key",from:"Anime <hello@example.com>",frontendUrl:"https://ani.kaehana.com",fetcher:async(url,init)=>{requests.push({url:String(url),init:init!});return new Response(JSON.stringify({id:"mail_1"}),{status:200})}});await delivery.sendVerification("a@example.com","verify token");await delivery.sendPasswordReset("a@example.com","reset token");assert.equal(requests.length,2);assert.match(String(requests[0].init.body),/verify-email\?token=verify%20token/);assert.match(String(requests[1].init.body),/reset-password\?token=reset%20token/);assert.doesNotMatch(JSON.stringify(requests),/passwordHash/)})

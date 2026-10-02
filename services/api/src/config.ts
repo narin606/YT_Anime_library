@@ -8,7 +8,9 @@ const environmentSchema = z.object({
   ANILIST_API_URL: z.string().url().default("https://graphql.anilist.co"),
   ADMIN_API_KEY: z.string().min(24).optional(),
   YOUTUBE_API_KEY: z.string().min(20).optional(),
-  COOKIE_DOMAIN: z.string().optional()
+  COOKIE_DOMAIN: z.string().optional(),
+  RESEND_API_KEY: z.string().min(10).optional(),
+  RESEND_FROM: z.string().min(3).optional()
 });
 
 export type AppConfig = z.infer<typeof environmentSchema>;

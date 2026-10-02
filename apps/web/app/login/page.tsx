@@ -35,7 +35,7 @@ export default function LoginPage() {
         {error && <p className="status error" role="alert">{error}</p>}
         <button disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
       </form>
-      <p className="authSwitch">New here? <Link href="/register">Create an account</Link></p>
+      <p className="authSwitch"><Link href="/forgot-password">Forgot password?</Link></p><p className="authSwitch">New here? <Link href="/register">Create an account</Link></p>
     </section>
   </main>;
 }
