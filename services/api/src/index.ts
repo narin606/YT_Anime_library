@@ -33,7 +33,10 @@ app.use(cors({ origin: config.FRONTEND_ORIGIN, credentials: true }));
 app.use(express.json({ limit: "64kb" }));
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: "draft-8", legacyHeaders: false });
 const recoveryLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: "draft-8", legacyHeaders: false });
+const publicApiLimiter=rateLimit({windowMs:60*1000,limit:180,standardHeaders:"draft-8",legacyHeaders:false,skip:req=>req.path==="/health"});
+const privilegedLimiter=rateLimit({windowMs:15*60*1000,limit:30,standardHeaders:"draft-8",legacyHeaders:false});
 const emailDelivery=config.RESEND_API_KEY&&config.RESEND_FROM?resendDelivery({apiKey:config.RESEND_API_KEY,from:config.RESEND_FROM,frontendUrl:config.FRONTEND_ORIGIN}):null;
+app.use("/api/",publicApiLimiter);
 
 function parseCookies(header: string | undefined) {
   return Object.fromEntries((header ?? "").split(";").map((part) => part.trim().split("=")).filter(([key, value]) => key && value).map(([key, value]) => [key, decodeURIComponent(value)]));
@@ -191,8 +194,10 @@ app.get("/api/v1/discovery", async (_req, res, next) => {
 });
 
 const importAnimeSchema = z.object({ anilistId: z.number().int().positive() });
-app.post("/api/v1/anime/import", async (req, res, next) => {
+app.post("/api/v1/anime/import", privilegedLimiter, async (req, res, next) => {
   try {
+    if(!await requireAdmin(req,res))return;
+    if(!requireCsrf(req,res))return;
     const { anilistId } = importAnimeSchema.parse(req.body);
     const item = await fetchAnimeById(config.ANILIST_API_URL, anilistId);
     if (!item) { res.status(404).json({ error: { code: "anime_not_found", message: "AniList anime not found." } }); return; }
@@ -212,7 +217,7 @@ app.get("/api/v1/anime/:id", async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-app.post("/api/v1/admin/youtube/channels/sync", async (req, res, next) => {
+app.post("/api/v1/admin/youtube/channels/sync", privilegedLimiter, async (req, res, next) => {
   try {
     if (!config.ADMIN_API_KEY || req.get("authorization") !== `Bearer ${config.ADMIN_API_KEY}`) { res.status(401).json({ error: { code: "unauthorized", message: "Valid administrator credentials are required." } }); return; }
     if (!config.YOUTUBE_API_KEY) { res.status(503).json({ error: { code: "youtube_not_configured", message: "YouTube ingestion is not configured." } }); return; }
@@ -223,7 +228,7 @@ app.post("/api/v1/admin/youtube/channels/sync", async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-app.post("/api/v1/admin/youtube/matches/run", async (req, res, next) => {
+app.post("/api/v1/admin/youtube/matches/run", privilegedLimiter, async (req, res, next) => {
   try {
     if (!config.ADMIN_API_KEY || req.get("authorization") !== `Bearer ${config.ADMIN_API_KEY}`) { res.status(401).json({ error: { code: "unauthorized", message: "Valid administrator credentials are required." } }); return; }
     if (!config.YOUTUBE_API_KEY) { res.status(503).json({ error: { code: "youtube_not_configured", message: "YouTube ingestion is not configured." } }); return; }
@@ -234,7 +239,7 @@ app.post("/api/v1/admin/youtube/matches/run", async (req, res, next) => {
 });
 
 const segmentedPlaylistSchema=z.object({playlistId:z.string().regex(/^PL[A-Za-z0-9_-]+$/),segments:z.array(z.object({animeId:z.string().min(1),sourceEpisodeStart:z.number().int().positive(),sourceEpisodeEnd:z.number().int().positive(),animeEpisodeStart:z.number().int().positive().default(1)})).min(2).max(20)});
-app.post("/api/v1/admin/youtube/playlists/segment",async(req,res,next)=>{
+app.post("/api/v1/admin/youtube/playlists/segment",privilegedLimiter,async(req,res,next)=>{
   try{
     if(!config.ADMIN_API_KEY||req.get("authorization")!==`Bearer ${config.ADMIN_API_KEY}`){res.status(401).json({error:{code:"unauthorized",message:"Valid administrator credentials are required."}});return;}
     if(!config.YOUTUBE_API_KEY){res.status(503).json({error:{code:"youtube_not_configured",message:"YouTube ingestion is not configured."}});return;}
@@ -244,7 +249,7 @@ app.post("/api/v1/admin/youtube/playlists/segment",async(req,res,next)=>{
 });
 
 const sourceImportSchema = z.object({ animeId: z.string().min(1), playlistId: z.string().regex(/^PL[A-Za-z0-9_-]+$/), channelId: z.string().regex(/^UC[A-Za-z0-9_-]+$/), channelName: z.string().trim().min(1).max(200), language: z.string().trim().min(1).max(80).optional(), audioType: z.enum(["Sub", "Dub", "Original"]).optional(), region: z.string().trim().min(1).max(80).optional() });
-app.post("/api/v1/admin/youtube/playlists/import", async (req, res, next) => {
+app.post("/api/v1/admin/youtube/playlists/import", privilegedLimiter, async (req, res, next) => {
   try {
     if (!config.ADMIN_API_KEY || req.get("authorization") !== `Bearer ${config.ADMIN_API_KEY}`) { res.status(401).json({ error: { code: "unauthorized", message: "Valid administrator credentials are required." } }); return; }
     if (!config.YOUTUBE_API_KEY) { res.status(503).json({ error: { code: "youtube_not_configured", message: "YouTube ingestion is not configured." } }); return; }

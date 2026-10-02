@@ -8,6 +8,14 @@ This file is the source of truth for the current project state. Read it before s
 
 **Distributor-backed catalogue ingestion now supports reviewed AniList mappings and multiple official language/audio/region source variants per anime.**
 
+### 2026-10-02 — full-stack security hardening
+
+- Made the public catalogue read-only: AniList catalogue import now requires an administrator session and CSRF token; public seasonal cards no longer trigger database writes.
+- Added global public API and stricter privileged-operation rate limits.
+- Added frontend CSP, anti-framing, MIME-sniffing protection, strict referrer/permissions policies, COOP/CORP and HSTS; removed the framework-powered header.
+- Hardened the API container to run as the unprivileged Node user with a read-only root filesystem, no Linux capabilities, no privilege escalation and a restricted temporary filesystem.
+- Production dependency audit reported zero known vulnerabilities; API and PostgreSQL remain bound behind the Cloudflare/loopback deployment boundary.
+
 ### 2026-10-02 — server-protected Catalogue Manager
 
 - Replaced the client-only management-page check with server-side session and role authorization before any private form HTML is rendered.
