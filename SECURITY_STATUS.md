@@ -16,7 +16,9 @@ Last verified: 2026-10-03 (Singapore time)
 ## Incomplete or blocked
 
 - Catalogue backfill stopped safely after AniList HTTP 429; ambiguous and combined playlists still require review.
-- Estate-wide DNS, TLS, Vercel, tunnel-client, and backup items are tracked outside this repository.
+- Vercel warns that `ani.kaehana.com` is misconfigured because DNS intentionally points to a proxied Cloudflare Tunnel, which forwards to `yt-anime-library.vercel.app`. A 2026-10-04 test cutover to Vercel's recommended DNS-only `A 76.76.21.21` passed DNS/Vercel validation but direct Vercel TLS failed, briefly producing HTTP 525. The backed-up tunnel CNAME was immediately restored and public HTTP 200 verified. Do not repeat the DNS cutover without confirming Vercel certificate readiness first.
+- DNS rollback backup: `/home/brandon/backups/ani-dns-before-vercel-20261004-015119.json`.
+- Other estate-wide DNS, TLS, tunnel-client, and backup items are tracked outside this repository.
 
 ## Production references
 
