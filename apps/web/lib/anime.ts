@@ -27,6 +27,20 @@ export interface CatalogueAnime extends Omit<AnimeSearchItem, "coverColor" | "an
   episodes: Array<{ id: string; seasonNumber: number; episodeNumber: number; title: string | null; durationSeconds: number | null; sources: Array<{ provider: "YOUTUBE"; videoId: string; thumbnailUrl: string | null; channelName: string | null; language: string | null; audioType: string | null; region: string | null; embeddable: boolean | null; availabilityStatus: string }> }>;
 }
 
+export function groupPlayableByGenre(items: CatalogueAnime[]) {
+  const groups = new Map<string, CatalogueAnime[]>();
+  for (const anime of items) {
+    for (const genre of anime.genres) {
+      const group = groups.get(genre) ?? [];
+      if (!group.some((item) => item.id === anime.id)) group.push(anime);
+      groups.set(genre, group);
+    }
+  }
+  return [...groups.entries()]
+    .map(([genre, anime]) => ({ genre, anime }))
+    .sort((a, b) => b.anime.length - a.anime.length || a.genre.localeCompare(b.genre));
+}
+
 function apiBaseUrl(override?: string) {
   const value = override ?? process.env.NEXT_PUBLIC_API_BASE_URL;
   if (!value) throw new Error("The catalogue API is not configured.");
@@ -74,8 +88,8 @@ export async function importAnime(anilistId: number, fetcher: typeof fetch = fet
   return payload.anime;
 }
 
-export async function getAnime(id: string): Promise<CatalogueAnime> {
-  const response = await fetch(`${apiBaseUrl()}/api/v1/anime/${encodeURIComponent(id)}`, { cache: "no-store" });
+export async function getAnime(id: string, cookie?: string): Promise<CatalogueAnime> {
+  const response = await fetch(`${apiBaseUrl()}/api/v1/anime/${encodeURIComponent(id)}`, { cache: "no-store", headers: cookie ? { cookie } : undefined, credentials: "include" });
   const payload = await response.json().catch(() => null) as { anime?: CatalogueAnime; error?: { message?: string } } | null;
   if (!response.ok || !payload?.anime) throw new Error(payload?.error?.message ?? "Anime not found.");
   return payload.anime;

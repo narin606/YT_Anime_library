@@ -12,7 +12,7 @@ main { min-height:100vh; overflow:hidden; }
 .brandMark { display:grid; place-items:center; width:2.6rem; height:2.6rem; border-radius:.8rem; color:#130d20; font-weight:800; background:linear-gradient(135deg,var(--pink),var(--violet)); box-shadow:0 0 32px rgba(157,123,255,.32); }
 .brand strong,.brand small { display:block; }.brand strong { font-family:Manrope,sans-serif; letter-spacing:-.03em; }.brand small { color:var(--muted); font-size:.7rem; margin-top:.1rem; }
 .topbar nav { display:flex; gap:.4rem; }.topbar nav a { color:#c8c3d2; padding:.65rem .9rem; border-radius:999px; font-size:.9rem; }.topbar nav a:hover { color:white; background:rgba(255,255,255,.07); }
-.topbar nav .signInLink { border:1px solid rgba(157,123,255,.4); color:#e7ddff; }
+.topbar nav .signInLink { border:1px solid rgba(157,123,255,.4); color:#e7ddff; }.navButton{background:transparent;cursor:pointer;padding:.65rem .9rem;border-radius:999px;font-size:.9rem}.viewerName{align-self:center;max-width:12rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c9b9ff;font-size:.82rem}.navLoading{width:5rem;height:2rem;border-radius:999px;background:rgba(255,255,255,.06)}
 .hero { min-height:670px; position:relative; display:grid; grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr); align-items:center; padding:7rem 7vw 6rem; border-bottom:1px solid var(--line); }
 .heroGlow { position:absolute; width:34rem; height:34rem; left:-14rem; top:2rem; background:rgba(255,112,173,.12); filter:blur(100px); border-radius:50%; }
 .heroContent { position:relative; z-index:2; max-width:770px; }.eyebrow { color:#c9b9ff; text-transform:uppercase; letter-spacing:.18em; font-size:.72rem; font-weight:700; }

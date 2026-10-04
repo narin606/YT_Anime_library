@@ -9,12 +9,14 @@ import {
   searchAnime,
   validateSearchQuery
 } from "../lib/anime";
+import { type ViewerAccount } from "../lib/auth";
+import { loginPath } from "../lib/navigation";
 
 function titleFor(anime: AnimeSearchItem) {
   return anime.title.english ?? anime.title.romaji;
 }
 
-export function SearchAnime() {
+export function SearchAnime({ viewer, authReady }: { viewer: ViewerAccount | null; authReady: boolean }) {
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<AnimeSearchItem[]>([]);
   const [page, setPage] = useState(0);
@@ -62,6 +64,11 @@ export function SearchAnime() {
   }
 
   async function addToLibrary(anime: AnimeSearchItem) {
+    if (!authReady) return;
+    if (!viewer) {
+      window.location.assign(loginPath(`/?search=${encodeURIComponent(titleFor(anime))}`));
+      return;
+    }
     setAddingId(anime.anilistId);
     setMessage(`Adding ${titleFor(anime)} to the library…`);
     try {
@@ -111,7 +118,7 @@ export function SearchAnime() {
           <div className="resultGrid" aria-label="Anime search results">
             {items.map((anime) => (
               <article className="animeCard" key={anime.anilistId}>
-                <button className="animeCardAction" type="button" disabled={addingId !== null} onClick={() => addToLibrary(anime)} aria-label={`Add ${titleFor(anime)} to the library`}>
+                <button className="animeCardAction" type="button" disabled={!authReady || addingId !== null} onClick={() => addToLibrary(anime)} aria-label={viewer ? `Add ${titleFor(anime)} to the library` : `Sign in to view ${titleFor(anime)}`}>
                   <div className="cover" style={{ backgroundColor: anime.coverColor ?? "#202635" }}>
                     {anime.coverImageUrl && <img src={anime.coverImageUrl} alt="" />}
                     <span>{anime.status?.replaceAll("_", " ") ?? "ANIME"}</span>

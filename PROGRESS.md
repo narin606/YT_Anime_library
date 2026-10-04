@@ -1,12 +1,20 @@
 # Project Progress
 
-Last updated: 2026-10-02
+Last updated: 2026-10-04
 
 This file is the source of truth for the current project state. Read it before starting work and update it before ending a work session.
 
 ## Current phase
 
-**Distributor-backed catalogue ingestion now supports reviewed AniList mappings and multiple official language/audio/region source variants per anime.**
+**The public catalogue is organized by AniList genres, while anime details and personal-library controls require an authenticated account.**
+
+### 2026-10-04 — authenticated catalogue access and genre discovery
+
+- Removed public distributor-branded homepage rows and regrouped playable catalogue titles by their AniList genres; provider/channel provenance remains stored internally.
+- Made homepage navigation session-aware: logged-out visitors see sign-in/registration controls, while My Library, profile identity and sign-out appear only for authenticated users.
+- Anime-card clicks now send logged-out visitors to sign in or register while preserving the selected destination; successful sign-in returns them to that anime.
+- Protected direct anime-detail API and page access so copied URLs cannot bypass authentication.
+- Added redirect-safety and genre-grouping regression coverage. Eight web tests and 24 API tests pass, both production builds pass, and logged-out server QA confirms anime-detail redirects and removal of hardcoded library/distributor labels.
 
 ### 2026-10-02 — full-stack security hardening
 

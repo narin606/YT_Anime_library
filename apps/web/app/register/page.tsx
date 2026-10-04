@@ -1,15 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { register } from "../../lib/auth";
+import { loginPath, safeNextPath } from "../../lib/navigation";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [next, setNext] = useState("/");
+
+  useEffect(() => {
+    setNext(safeNextPath(new URLSearchParams(window.location.search).get("next")));
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -17,7 +23,7 @@ export default function RegisterPage() {
     setBusy(true); setError("");
     try {
       await register({ name: String(data.get("name")), email: String(data.get("email")), password: String(data.get("password")) });
-      router.push("/login?verified=pending"); router.refresh();
+      router.push(`${loginPath(next, "verification_pending")}&verified=pending`); router.refresh();
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Registration failed.");
     } finally { setBusy(false); }
@@ -27,7 +33,7 @@ export default function RegisterPage() {
     <Link className="authBrand" href="/"><span className="brandMark">遊</span><strong>YT Anime Library</strong></Link>
     <section className="authCard">
       <span className="eyebrow">Create your profile</span><h1>Your anime profile starts here.</h1>
-      <p>Create a private account for the catalogue today. Watchlists and viewing progress are coming later.</p>
+      <p>Create a private account to open anime, build your library, and keep viewing state separate.</p>
       <form onSubmit={submit} className="authForm">
         <label>Profile name<input name="name" autoComplete="nickname" maxLength={32} required /></label>
         <label>Email<input name="email" type="email" autoComplete="email" required /></label>
@@ -35,7 +41,7 @@ export default function RegisterPage() {
         {error && <p className="status error" role="alert">{error}</p>}
         <button disabled={busy}>{busy ? "Creating…" : "Create account"}</button>
       </form>
-      <p className="authSwitch">Already have an account? <Link href="/login">Sign in</Link></p>
+      <p className="authSwitch">Already have an account? <Link href={loginPath(next)}>Sign in</Link></p>
     </section>
   </main>;
 }

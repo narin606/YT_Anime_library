@@ -1,4 +1,5 @@
-import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 
 import { episodeLabel, getAnime } from "../../../lib/anime";
 import { EpisodePlayer } from "./episode-player";
@@ -6,8 +7,13 @@ import { EpisodePlayer } from "./episode-player";
 export default async function AnimeDetails({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   let anime;
-  try { anime = await getAnime(id); }
-  catch { notFound(); }
+  const cookie = (await cookies()).toString();
+  if (!cookie.includes("yt_anime_session=")) redirect(`/login?next=${encodeURIComponent(`/anime/${id}`)}&reason=signin_required`);
+  try { anime = await getAnime(id, cookie); }
+  catch (error) {
+    if (error instanceof Error && error.message === "Sign in to view this anime.") redirect(`/login?next=${encodeURIComponent(`/anime/${id}`)}&reason=signin_required`);
+    notFound();
+  }
   const title = anime.title.english ?? anime.title.romaji;
   return <main className="detailPage">
     <header className="topbar">

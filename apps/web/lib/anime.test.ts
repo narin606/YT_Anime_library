@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { episodeLabel, getDiscovery, importAnime, validateSearchQuery } from "./anime.js";
+import { episodeLabel, getDiscovery, groupPlayableByGenre, importAnime, validateSearchQuery, type CatalogueAnime } from "./anime.js";
 import { EPISODES_PER_PAGE, episodePageCount } from "./pagination.js";
 
 test("search validation mirrors the API limits", () => {
@@ -42,4 +42,19 @@ test("getDiscovery validates the homepage row payload", async () => {
   assert.deepEqual(await getDiscovery(fetcher, "https://api.example"), response);
   const broken: typeof fetch = async () => new Response(JSON.stringify({ playable: [] }), { status: 200 });
   await assert.rejects(getDiscovery(broken, "https://api.example"), /unexpected response/);
+});
+
+test("playable catalogue titles are grouped by AniList genre, not distributor", () => {
+  const anime = (id: string, genres: string[]) => ({ id, genres } as CatalogueAnime);
+  const groups = groupPlayableByGenre([
+    anime("one", ["Action", "Fantasy"]),
+    anime("two", ["Action", "Comedy"]),
+    anime("three", ["Drama"])
+  ]);
+  assert.deepEqual(groups.map((group) => [group.genre, group.anime.map((item) => item.id)]), [
+    ["Action", ["one", "two"]],
+    ["Comedy", ["two"]],
+    ["Drama", ["three"]],
+    ["Fantasy", ["one"]]
+  ]);
 });

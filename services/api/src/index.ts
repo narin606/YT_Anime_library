@@ -211,6 +211,7 @@ app.post("/api/v1/anime/import", privilegedLimiter, async (req, res, next) => {
 
 app.get("/api/v1/anime/:id", async (req, res, next) => {
   try {
+    if (!await currentAccount(req)) { res.status(401).json({ error: { code: "unauthenticated", message: "Sign in to view this anime." } }); return; }
     const anime = await prisma.anime.findUnique({ where: { id: String(req.params.id) }, include: { episodes: { orderBy: [{ seasonNumber: "asc" }, { episodeNumber: "asc" }], include: { videoSources: { where: { availabilityStatus: "AVAILABLE", embeddable: true }, include: { provider: true } } } } } });
     if (!anime) { res.status(404).json({ error: { code: "anime_not_found", message: "Anime not found." } }); return; }
     res.json({ anime: publicAnime(anime) });
