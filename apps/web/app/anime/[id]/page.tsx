@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { episodeLabel, getAnime } from "../../../lib/anime";
 import { EpisodePlayer } from "./episode-player";
+import { DetailNavigation } from "./detail-navigation";
 
 export default async function AnimeDetails({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,7 +19,7 @@ export default async function AnimeDetails({ params }: { params: Promise<{ id: s
   return <main className="detailPage">
     <header className="topbar">
       <a className="brand" href="/" aria-label="YT Anime Library home"><span className="brandMark">遊</span><span><strong>YT Anime Library</strong><small>Official sources. One library.</small></span></a>
-      <nav aria-label="Main navigation"><a href="/">Catalogue</a><a className="signInLink" href="/login">Sign in</a></nav>
+      <DetailNavigation />
     </header>
     <section className="detailHero" style={anime.bannerImageUrl ? { backgroundImage: `linear-gradient(90deg, rgba(9,8,13,.96), rgba(9,8,13,.66)), url(${anime.bannerImageUrl})` } : undefined}>
       <div className="detailCover">{anime.coverImageUrl ? <img src={anime.coverImageUrl} alt={`${title} cover`} /> : <span>No cover</span>}</div>

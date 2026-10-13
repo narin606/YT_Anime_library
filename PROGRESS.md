@@ -8,6 +8,13 @@ This file is the source of truth for the current project state. Read it before s
 
 **The public catalogue is organized by AniList genres, while anime details and personal-library controls require an authenticated account.**
 
+### 2026-10-13 — authenticated detail navigation
+
+- Replaced the hardcoded anime-detail Sign in link with My library and a functional Sign out button, rendered only after existing server-side session verification.
+- Sign-out uses the existing CSRF-protected logout endpoint; failure remains visible without falsely clearing authenticated state.
+- Eleven web regression tests and the production build pass. Production deployment `dpl_9CDscQZDCLrjwgNL2Bmc3mf8k6nF` is live at `ani.kaehana.com`.
+- Live browser checks passed at 412px mobile and 1440px desktop: no signed-in Sign in link, zero mobile overflow, working sign-out with DB-confirmed session revocation, and logged-out detail redirect. Temporary QA session cleanup confirmed zero remaining.
+
 ### 2026-10-13 — signed-in search-result fix
 
 - Reproduced the production contradiction: the homepage showed Sign out/Admin, while clicking a search result returned “Sign in to continue.”
