@@ -1,12 +1,20 @@
 # Project Progress
 
-Last updated: 2026-10-04
+Last updated: 2026-10-13
 
 This file is the source of truth for the current project state. Read it before starting work and update it before ending a work session.
 
 ## Current phase
 
 **The public catalogue is organized by AniList genres, while anime details and personal-library controls require an authenticated account.**
+
+### 2026-10-13 — signed-in search-result fix
+
+- Reproduced the production contradiction: the homepage showed Sign out/Admin, while clicking a search result returned “Sign in to continue.”
+- Fixed the AniList import client to send cross-origin session cookies and the existing CSRF cookie in its security header; server-side administrator and CSRF checks remain unchanged.
+- Regression test failed on missing credentials before the fix; all ten web tests and the production build now pass.
+- Deployed frontend `dpl_6FcgtweAYirZv5TeL2r4q4Dg1qKf` to `ani.kaehana.com`. Live signed-in search → Frieren detail passed; logged-out direct detail access still redirects to sign-in. Removed the temporary verification session and confirmed zero remaining.
+- Unrelated existing matcher-worker/API/Compose edits were left untouched. The detail-page header still has a pre-existing hardcoded Sign in link, separate from this request failure.
 
 ### 2026-10-04 — authenticated catalogue access and genre discovery
 

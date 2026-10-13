@@ -1,3 +1,5 @@
+import { csrfToken } from "./auth";
+
 export const MIN_SEARCH_LENGTH = 2;
 export const MAX_SEARCH_LENGTH = 120;
 
@@ -80,7 +82,8 @@ export async function searchAnime(query: string, page = 1, signal?: AbortSignal)
 export async function importAnime(anilistId: number, fetcher: typeof fetch = fetch, baseUrl?: string): Promise<CatalogueAnime> {
   const response = await fetcher(`${apiBaseUrl(baseUrl)}/api/v1/anime/import`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken() },
     body: JSON.stringify({ anilistId })
   });
   const payload = await response.json().catch(() => null) as { anime?: CatalogueAnime; error?: { message?: string } } | null;

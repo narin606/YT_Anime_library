@@ -32,8 +32,33 @@ test("importAnime persists a selected AniList result", async () => {
   };
   const anime = await importAnime(21, fetcher, "https://api.example");
   assert.equal(anime.id, "anime_1");
+  assert.equal(request?.credentials, "include", "send the signed-in session to the separate API origin");
+  assert.ok(new Headers(request?.headers).has("X-CSRF-Token"), "include the mutation security token");
   assert.equal(request?.method, "POST");
   assert.equal(request?.body, JSON.stringify({ anilistId: 21 }));
+});
+
+test("importAnime sends the browser's actual CSRF cookie", async () => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, "document");
+  Object.defineProperty(globalThis, "document", { configurable: true, value: { cookie: "other=value; yt_anime_csrf=regression-csrf-token" } });
+  try {
+    const fetcher: typeof fetch = async (_url, init) => {
+      assert.equal(init?.credentials, "include");
+      assert.equal(new Headers(init?.headers).get("X-CSRF-Token"), "regression-csrf-token");
+      return new Response(JSON.stringify({ anime: { id: "anime_1" } }), { status: 201 });
+    };
+    assert.equal((await importAnime(21, fetcher, "https://api.example")).id, "anime_1");
+  } finally {
+    if (previous) Object.defineProperty(globalThis, "document", previous);
+    else Reflect.deleteProperty(globalThis, "document");
+  }
+});
+
+test("importAnime preserves authorization and CSRF rejection messages", async () => {
+  for (const [status, message] of [[401, "Sign in to continue."], [403, "Administrator access is required."], [403, "Security token is invalid. Refresh and try again."]] as const) {
+    const fetcher: typeof fetch = async () => new Response(JSON.stringify({ error: { message } }), { status });
+    await assert.rejects(importAnime(21, fetcher, "https://api.example"), { message });
+  }
 });
 
 test("getDiscovery validates the homepage row payload", async () => {
